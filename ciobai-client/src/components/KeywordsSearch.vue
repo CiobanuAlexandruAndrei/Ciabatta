@@ -118,6 +118,7 @@ const fetchCountries = async () => {
 };
 
 const saveKeyword = async (keyword) => {
+    /*
     const token = localStorage.getItem("token");
     try {
         await axios.post(
@@ -133,6 +134,7 @@ const saveKeyword = async (keyword) => {
     } catch (error) {
         console.error("Error saving keyword:", error);
     }
+    */
 };
 
 const searchKeyword = async () => {
@@ -196,7 +198,6 @@ const getDifficultyColor = (difficulty) => {
         return 'bg-rose-400';
     }
 }
-
 
 onMounted(() => {
     fetchCountries();

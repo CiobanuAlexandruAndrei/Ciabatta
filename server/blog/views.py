@@ -57,10 +57,13 @@ def search_keyword(request):
                 filters=[
                     ["keyword_data.keyword_info.search_volume", ">", 10]
                 ],
-                limit=10
+                limit=10,
+                include_serp_info=True,
+                include_seed_keyword=True,
+
             )
 
-            response = client.post("/v3/dataforseo_labs/google/related_keywords/live", post_data)
+            response = client.post("/v3/dataforseo_labs/google/keyword_suggestions/live", post_data)
 
             if response["status_code"] == 20000:
                 print(response)

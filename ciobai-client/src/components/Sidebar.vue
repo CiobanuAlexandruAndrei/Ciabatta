@@ -1,5 +1,5 @@
 <template>
-  <div :class="['flex flex-col h-screen transition-width duration-300 border-r-2 border-black', isCollapsed ? 'w-20' : 'w-64']">
+  <div :class="['fixed top-0 left-0 flex flex-col h-full transition-width duration-300 border-r-2 border-black', isCollapsed ? 'w-20' : 'w-64']">
     <div class="flex items-center justify-between p-4 border-b">
       <h1 class="text-xl font-bold" v-if="!isCollapsed">Tiseo</h1>
       <button @click="toggleCollapse" aria-label="Toggle Sidebar">
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, defineEmits } from 'vue'
 import { useRouter } from 'vue-router'
 
 // Importing images
@@ -55,9 +55,11 @@ const menuItems: MenuItem[] = [
 
 const isCollapsed = ref(false)
 const router = useRouter()
+const emit = defineEmits(['toggle-collapse'])
 
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
+  emit('toggle-collapse', isCollapsed.value)
 }
 
 const handleResize = () => {
