@@ -38,7 +38,7 @@ def search_keyword(request):
         print(country)
 
         try:
-            stored_keyword = Keyword.objects.get(name=keyword, country=country)
+            stored_keyword = KeywordData.objects.get(name=keyword, country=country)
         except Exception as e:
             stored_keyword = None
 
@@ -49,47 +49,44 @@ def search_keyword(request):
         else:
             client = RestClient(DATAFORSEO_USERNAME, DATAFORSEO_PASSWORD)
             post_data = dict()
-    
+
             post_data[len(post_data)] = dict(
+                keyword=keyword,
                 location_name=country,
-                keywords=[keyword]
+                language_name="English",
+                filters=[
+                    ["keyword_data.keyword_info.search_volume", ">", 10]
+                ],
+                limit=10
             )
-            
-            response = client.post('/v3/keywords_data/google_ads/keywords_for_keywords/live', post_data)
-            
-            if response['status_code'] == 20000:
+
+            response = client.post("/v3/dataforseo_labs/google/related_keywords/live", post_data)
+
+            if response["status_code"] == 20000:
                 print(response)
-                results = response['tasks'][0]['result']
+                results = response['tasks'][0]['result'][0]['items']
                 
                 for result_dict in results:
                     trend = 'none'
-                    monthly_searches = result_dict.get('monthly_searches')
+                    monthly_searches = result_dict['keyword_data'].get('keyword_info', {}).get('monthly_searches', [])
                     if monthly_searches and len(monthly_searches) > 1:
-                        last_month_search_volume = result_dict['monthly_searches'][0]['search_volume']
-                        if last_month_search_volume > result_dict['search_volume']:
+                        last_month_search_volume = monthly_searches[0]['search_volume']
+                        if last_month_search_volume > result_dict['keyword_data']['keyword_info']['search_volume']:
                             trend = 'UP'
-                        elif last_month_search_volume == result_dict['search_volume']:
+                        elif last_month_search_volume == result_dict['keyword_data']['keyword_info']['search_volume']:
                             trend = 'SAME'
-                        elif last_month_search_volume < result_dict['search_volume']:
+                        elif last_month_search_volume < result_dict['keyword_data']['keyword_info']['search_volume']:
                             trend = 'DOWN'
                     
-                    result_dict['trend'] = trend 
-
-                    competition_index = result_dict.get('competition_index')
-                    search_volume = result_dict.get('search_volume')
-                    cpc = result_dict.get('cpc')
-                    difficulty_score = calculate_keyword_difficulty(competition_index, search_volume, cpc)
-                    result_dict['difficulty_score'] = difficulty_score
-                    
-                    del result_dict['monthly_searches']
+                    result_dict['keyword_data']['trend'] = trend
+                    del result_dict['keyword_data']['keyword_info']['monthly_searches']
                 
-                saved_keyword = Keyword(name=keyword, country=country, json=json.dumps(results, indent=4))
+                saved_keyword = KeywordData(name=keyword, country=country, json=json.dumps(results, indent=4))
                 saved_keyword.save()
 
                 return Response({'message': 'Keywords found', 'result': results}, status=status.HTTP_200_OK)
             else: 
                 return Response({'message': 'Error retrieving keywords data'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
         # return Response({'message': 'Keywords found', 'response' : response}, status=status.HTTP_200_OK)
     else:
         print(form.errors)

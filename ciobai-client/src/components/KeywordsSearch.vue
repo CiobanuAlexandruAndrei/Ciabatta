@@ -40,11 +40,29 @@
                 <TableCell class="font-medium w-[300px]">
                     {{ item.keyword }}
                 </TableCell>
-                <TableCell> {{ item.trend }} </TableCell>
+                <TableCell>
+                    <img :src="getTrendIcon(item.trend)" alt="trend icon" class="h-5 text-center" />
+                </TableCell>
                 <TableCell> {{ item.volume }} </TableCell>
-                <TableCell> {{ item.competition }} </TableCell>
-                <TableCell> {{ item.difficulty }} </TableCell>
-                <TableCell> - </TableCell>
+                <TableCell> 
+                    <span :class="[getCompetitionColor(item.competition), 'p-1', 'rounded']">
+                        {{ item.competition }} 
+                    </span>    
+                </TableCell>
+                <TableCell> 
+                    <div v-if="item.difficulty">
+                        <span :class="[getDifficultyColor(item.difficulty), 'p-1', 'rounded']">
+                            {{ item.difficulty }} 
+                        </span>
+                    </div>
+                    <div v-else>
+                        <span class="bg-slate-300 p-1 rounded">
+                            Unknown
+                        </span>
+                    </div>
+                   
+                </TableCell>
+                <TableCell> {{ item.intent }} </TableCell>
                 <TableCell class="text-right">
                     <Button @click="saveKeyword(item.keyword)">Save</Button>
                 </TableCell>
@@ -77,6 +95,11 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+
+// Importing the image assets
+import upIcon from '@/assets/img/up_icon.png';
+import downIcon from '@/assets/img/down_icon.png';
+import rightIcon from '@/assets/img/right_icon.png';
 
 const countries = ref([]);
 const keyword = ref("");
@@ -128,21 +151,52 @@ const searchKeyword = async () => {
                 },
             }
         );
-        
-        
+
         keywordData.value = response.data.result.map(item => ({
-            keyword: item.keyword,
-            volume: item.search_volume, 
-            competition: item.competition,
-            difficulty: item.difficulty_score,
-            trend: item.trend
+            keyword: item.keyword_data.keyword,
+            volume: item.keyword_data.keyword_info.search_volume, 
+            competition: item.keyword_data.keyword_info.competition_level,
+            difficulty: item.keyword_data.keyword_properties.keyword_difficulty,
+            intent: item.keyword_data.search_intent_info.main_intent,
+            trend: item.keyword_data.trend
         }));
 
-        console.log("Keyword data retrieved:", keywordData.value);
     } catch (error) {
         console.error("Error searching keyword:", error);
     }
 };
+
+const getTrendIcon = (trend) => {
+    if (trend === "UP") {
+        return upIcon;
+    } else if (trend === "DOWN") {
+        return downIcon;
+    } else if (trend === "SAME") {
+        return rightIcon;
+    }
+};
+
+const getCompetitionColor = (competition) => {
+    if (competition === 'HIGH'){
+        return 'bg-rose-400';
+    } else if (competition === "MEDIUM") {
+        return 'bg-amber-200';
+    } else if (competition === "LOW") {
+        return 'bg-green-400';
+    }
+}
+
+
+const getDifficultyColor = (difficulty) => {
+    if (difficulty >= 0 && difficulty < 30){
+        return 'bg-green-400';
+    } else if (difficulty >= 30 && difficulty < 50) {
+        return 'bg-amber-200';
+    } else if (difficulty >= 50 && difficulty <= 100) {
+        return 'bg-rose-400';
+    }
+}
+
 
 onMounted(() => {
     fetchCountries();

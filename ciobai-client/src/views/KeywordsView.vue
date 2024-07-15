@@ -12,9 +12,7 @@
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value="search">
-                    
                     <KeywordsSearch />
-                   
                 </TabsContent>
                 <TabsContent value="saved">
                     <KeywordsSaved />
