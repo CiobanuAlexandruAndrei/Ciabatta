@@ -1,14 +1,25 @@
 <template>
     <div class="flex gap-4 mt-12 mb-12">
 
-        <div v-if="keywords.length > 0">
-            <ul v-for="item in keywords" :key="item">
+        <div v-if="keywordClusters.length > 0">
+            <Collapsible class="min-w-full">
+                <CollapsibleTrigger class="w-full">
+                    <div class="border-2 border-gray-200 p-1 w-full text-left">
+                        Can I use this in my project?
+                    </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent class="w-full">
+                Yes. Free to use for personal and commercial projects. No attribution
+                required.
+                </CollapsibleContent>
+            </Collapsible>
+            <ul v-for="item in keywordClusters" :key="item">
                 <li> {{ item }} </li>
             </ul>
         </div>  
         
         <div v-else>
-            No saved keywords
+            No keyword clusters
         </div>
     </div>
 
@@ -17,33 +28,42 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import axios from "axios";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 
-const keywords = ref({});
+
+const keywordClusters = ref("");
 
 
-onMounted(async () => {
-    getSavedKeywords();
-});
-
-const getSavedKeywords = async () => {
-    const token = localStorage.getItem("token");
+const fetchKeywordClusters = async () => {
     try {
-        const response = await axios.get(
-            "http://127.0.0.1:8000/api/get-keywords",
+        const token = localStorage.getItem("token");
+        const response = await axios.get("http://127.0.0.1:8000/api/get-keyword-clusters",
             {
                 headers: {
                     Authorization: `Token ${token}`
 
                 },
-            }
-        );
-        keywords.value = response.data.keywords;
-        console.log('SAVEDDD')
-        console.log(response.data)
+            });
+        keywordClusters.value = response.data.clusters;
+        console.log(keywordClusters.value);
     } catch (error) {
-        console.error("Error searching keyword:", error);
+        console.error("Error fetching keywords clusters:", error);
     }
 };
+
+onMounted(async () => {
+    fetchKeywordClusters();
+});
+
+
+
+
+
+
 
 
 </script>

@@ -8,12 +8,12 @@
             <SelectContent>
                 <SelectGroup>
                     <SelectLabel>Countries</SelectLabel>
-                    <template v-for="country in countries" :key="country.name.common">
+                    <div v-for="country in countries" :key="country.name.common">
                         <SelectItem :value="country.name.common">
                             <img :src="country.flags.svg" alt="" class="inline-block w-6 h-4 mr-2" />
                             {{ country.name.common }}
                         </SelectItem>
-                    </template>
+                    </div>
                 </SelectGroup>
             </SelectContent>
         </Select>
@@ -64,7 +64,7 @@
                 </TableCell>
                 <TableCell> {{ item.intent }} </TableCell>
                 <TableCell class="text-right">
-                    <Button @click="saveKeyword(item.keyword)">Save</Button>
+                    <SaveToKeywordcluster :keyword="item.keyword" />
                 </TableCell>
             </TableRow>
         </TableBody>
@@ -96,7 +96,8 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-// Importing the image assets
+import SaveToKeywordcluster from '@/components/SaveToKeywordCluster.vue'
+
 import upIcon from '@/assets/img/up_icon.png';
 import downIcon from '@/assets/img/down_icon.png';
 import rightIcon from '@/assets/img/right_icon.png';
@@ -105,6 +106,13 @@ const countries = ref([]);
 const keyword = ref("");
 const selectedCountry = ref("");
 const keywordData = ref([]);
+
+
+const selectNewCluster = () => {
+    console.log('selected');
+    newClusterSelected.value = true;
+}
+
 
 const fetchCountries = async () => {
     try {
@@ -154,13 +162,15 @@ const searchKeyword = async () => {
             }
         );
 
+        console.log(response.data);
+
         keywordData.value = response.data.result.map(item => ({
-            keyword: item.keyword_data.keyword,
-            volume: item.keyword_data.keyword_info.search_volume, 
-            competition: item.keyword_data.keyword_info.competition_level,
-            difficulty: item.keyword_data.keyword_properties.keyword_difficulty,
-            intent: item.keyword_data.search_intent_info.main_intent,
-            trend: item.keyword_data.trend
+            keyword: item.keyword,
+            volume: item.keyword_info.search_volume, 
+            competition: item.keyword_info.competition_level,
+            difficulty: item.keyword_properties.keyword_difficulty,
+            intent: item.search_intent_info.main_intent,
+            trend: item.keyword_info.trend
         }));
 
     } catch (error) {
