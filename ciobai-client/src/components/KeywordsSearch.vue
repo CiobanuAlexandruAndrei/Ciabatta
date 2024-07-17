@@ -146,16 +146,19 @@ const searchKeyword = async () => {
     isLoading.value = true;
     noInfoFound.value = false;
     const token = localStorage.getItem("token");
+    const csrf = localStorage.getItem("csrf");
+
     try {
         const response = await axios.post(
-            "http://127.0.0.1:8000/api/search-keyword",
+            "http://127.0.0.1:5000/api/search_keyword",
             {
+                csrf_token: csrf,
                 name: keyword.value,
                 country: selectedCountry.value,
             },
             {
                 headers: {
-                    Authorization: `Token ${token}`,
+                    Authorization: `Bearer ${token}`,
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
             }

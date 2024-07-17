@@ -23,14 +23,14 @@ DATAFORSEO_PASSWORD = os.getenv('DATAFORSEO_PASSWORD')
 
 auth = HTTPTokenAuth(scheme='Bearer')
 
-
-
 @auth.verify_token
 def verify_token(token):
-    tokens = Token.query.all()  
-    for user_id, user_token in tokens.items():
-        if user_token == token:
-            return User.query.get(user_id)
+    # print(f"Verifying token: {token}")  # Debug statement
+    token_obj = Token.query.filter_by(token=token).first()
+    if token_obj:
+        # print(f"Token valid for user_id: {token_obj.user_id}")  # Debug statement
+        return User.query.get(token_obj.user_id)
+    # print("Token invalid")  # Debug statement
     return None
 
 @auth.login_required
@@ -46,21 +46,23 @@ def search_keyword():
     if form.validate_on_submit():
         keyword = form.name.data
         country = form.country.data
-        
+
         stored_keyword = KeywordData.query.filter_by(name=keyword, country=country).first()
 
         if stored_keyword:
             return jsonify({'message': 'Keywords found', 'result': json.loads(stored_keyword.json)}), 200
         else:
             client = RestClient(DATAFORSEO_USERNAME, DATAFORSEO_PASSWORD)
-            post_data = {
-                "keyword": keyword,
-                "location_name": country,
-                "language_name": "English",
-                "limit": 10,
-                "include_serp_info": True,
-                "include_seed_keyword": True,
-            }
+            post_data = dict()
+
+            post_data[len(post_data)] = dict(
+                keyword=keyword,
+                location_name=country,
+                language_name="English",
+                limit=10,
+                include_serp_info=True,
+                include_seed_keyword=True,
+            )
 
             response = client.post("/v3/dataforseo_labs/google/keyword_suggestions/live", post_data)
 
@@ -107,8 +109,10 @@ def search_keyword():
                 else:
                     return jsonify({'message': 'No results found in the response'}), 204
             else: 
+                print(response)
                 return jsonify({'message': 'Error retrieving keywords data', 'details': response}), 500
     else:
+        print(form.errors)
         return jsonify({'message': 'Invalid form data', 'errors': form.errors}), 400
     
 
@@ -167,7 +171,7 @@ def generate_keyword_suggestions_view():
             ]
         )
 
-        keywords = client.choices[0].text.strip()
+        keywords = openai_response.choices[0].text.strip()
         cost = openai_api_calculate_cost(client.usage)
         generated_keywords = json.loads(keywords)
 
@@ -190,7 +194,8 @@ def get_api_usage_costs():
     for api_obj in APIUsed.query.all():
         cost_records = APICostRecord.query.filter_by(api_used_name=api_obj.name).all()
         data[api_obj.name] = schema.dump(cost_records)
-        return jsonify({'message': 'API cost data retrieved successfully', 'data': data}), 200
+    
+    return jsonify({'message': 'API cost data retrieved successfully', 'data': data}), 200
     
 @seo.route('/add_keyword_to_cluster', methods=['POST'])
 @auth.login_required

@@ -1,13 +1,12 @@
 from flask import request, jsonify
 from flask_httpauth import HTTPTokenAuth
 from werkzeug.security import check_password_hash, generate_password_hash
-from ..extensions import db  
+from ..extensions import db
 from .models import User, Profile, Token
 import secrets
-from . import security 
+from . import security
 
 auth = HTTPTokenAuth(scheme='Bearer')
-
 
 @security.route('/create_user', methods=['POST'])
 def create_user():
@@ -31,7 +30,6 @@ def create_user():
     
     return jsonify({'message': 'User created successfully', 'user_id': new_user.id}), 201
 
-
 @security.route('/login', methods=['POST'])
 def login_view():
     data = request.get_json()
@@ -47,7 +45,6 @@ def login_view():
         return jsonify({'token': token, 'user': user.username})
     else:
         return jsonify({'error': 'Invalid credentials'}), 400
-    
 
 @security.route('/logout', methods=['POST'])
 @auth.login_required
@@ -77,7 +74,10 @@ def get_username_view(pk):
 
 @auth.verify_token
 def verify_token(token):
+    print(f"Verifying token: {token}")  # Debug statement
     token_obj = Token.query.filter_by(token=token).first()
     if token_obj:
+        print(f"Token valid for user_id: {token_obj.user_id}")  # Debug statement
         return User.query.get(token_obj.user_id)
+    print("Token invalid")  # Debug statement
     return None

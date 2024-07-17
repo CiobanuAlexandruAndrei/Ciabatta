@@ -75,10 +75,10 @@ const keywordClusters = ref("");
 const fetchKeywordClusters = async () => {
     try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://127.0.0.1:8000/api/get-keyword-clusters",
+        const response = await axios.get("http://127.0.0.1:5000/api/get_keywords_clusters",
             {
                 headers: {
-                    Authorization: `Token ${token}`
+                    Authorization: `Bearer ${token}`
 
                 },
             });
