@@ -16,12 +16,12 @@ class KeywordCluster(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
 class Keyword(models.Model):
-    name = models.CharField(max_length=200)
-    keyword_data = models.ForeignKey(KeywordData, on_delete=models.CASCADE) 
+    name = models.CharField(max_length=200, primary_key=True) 
 
 class APIUsed(models.Model):
-    name = models.CharField(max_length=200)
-
+    name = models.CharField(max_length=200, primary_key=True)
+    
 class APICostRecord(models.Model):
     cost = models.FloatField()
-    api_used = models.ForeignKey(APIUsed, on_delete=models.CASCADE) 
+    timestamp = models.DateTimeField(auto_now_add=True)
+    api_used = models.ForeignKey(APIUsed, on_delete=models.CASCADE)

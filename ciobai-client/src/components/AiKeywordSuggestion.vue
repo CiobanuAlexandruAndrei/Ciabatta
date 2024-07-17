@@ -22,7 +22,10 @@
         <Input v-model="additionaInstructions" placeholder="Additional Instructions" />
         <Button @click="generateKeywords()" variant="secondary" class="mt-4">Generate</Button>
     </div>
-    <div v-if="keywords.length > 0" class="mt-5">
+    <div v-if="isLoading" class="mt-5">
+        <LoadingTable />
+    </div>
+    <div v-if="keywords.length > 0 && !isLoading" class="mt-5">
         <Table>
             <TableHeader>
             <TableRow>
@@ -40,8 +43,11 @@
                 {{ item }}
                 </TableCell>
                 
-                <TableCell class="text-right">
-                    <SaveToKeywordcluster :keyword="item" />
+                <TableCell class="">
+                    <div class="flex justify-end gap-1">
+                        <Button variant="outline">test</Button>
+                        <SaveToKeywordcluster :keyword="item" />
+                    </div>
                 </TableCell>
             </TableRow>
             </TableBody>
@@ -55,6 +61,7 @@ import axios from "axios";
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import SaveToKeywordcluster from '@/components/SaveToKeywordCluster.vue'
+import LoadingTable from '@/components/LoadingTable.vue'
 
 import {
   Select,
@@ -80,8 +87,10 @@ const topicName = ref("");
 const intentName = ref("");
 const additionaInstructions = ref("");
 const keywords = ref([]);
+const isLoading = ref(false);
 
 const generateKeywords = async () => {
+    isLoading.value = true;
     const token = localStorage.getItem("token");
     try {
         console.log(topicName.value);
@@ -105,7 +114,7 @@ const generateKeywords = async () => {
 
         keywords.value = response.data.result.keywords;
         console.log(keywords.value)
-
+        isLoading.value = false;
 
     } catch (error) {
         console.error("Error generating keyword:", error);

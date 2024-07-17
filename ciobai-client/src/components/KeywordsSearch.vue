@@ -1,5 +1,5 @@
 <template>
-    <div class="flex gap-4 mt-12 mb-12">
+    <div class="flex gap-4 mt-12 mb-3">
         <Input v-model="keyword" type="text" placeholder="Keyword" class="w-[300px]" />
         <Select v-model="selectedCountry">
             <SelectTrigger class="w-[280px]">
@@ -20,9 +20,16 @@
         <Button @click="searchKeyword" variant="secondary">
             Search
         </Button>
+        <KeywordLookupInfo />
     </div>
-
-    <Table v-if="keywordData.length > 0">
+    
+    <div v-if="isLoading" class="mt-5">
+        <LoadingTable />
+    </div>
+    <div v-if="noInfoFound" class="mt-5">
+        No info found
+    </div>
+    <Table v-if="keywordData.length > 0 && !isLoading">
         <TableCaption></TableCaption>
         <TableHeader>
             <TableRow>
@@ -43,11 +50,25 @@
                 <TableCell>
                     <img :src="getTrendIcon(item.trend)" alt="trend icon" class="h-5 text-center" />
                 </TableCell>
-                <TableCell> {{ item.volume }} </TableCell>
                 <TableCell> 
-                    <span :class="[getCompetitionColor(item.competition), 'p-1', 'rounded']">
-                        {{ item.competition }} 
-                    </span>    
+                    <div v-if="item.volume">
+                        {{ item.volume }}
+                    </div>
+                    <div v-else>
+                        Unknown
+                    </div>
+                </TableCell>
+                <TableCell> 
+                    <div v-if="item.competition">
+                        <span :class="[getCompetitionColor(item.competition), 'p-1', 'rounded']">
+                            {{ item.competition }} 
+                        </span>    
+                    </div>
+                    <div v-else>
+                        <span class="bg-slate-300 p-1 rounded">
+                            Unknown
+                        </span>
+                    </div>
                 </TableCell>
                 <TableCell> 
                     <div v-if="item.difficulty">
@@ -60,7 +81,6 @@
                             Unknown
                         </span>
                     </div>
-                   
                 </TableCell>
                 <TableCell> {{ item.intent }} </TableCell>
                 <TableCell class="text-right">
@@ -97,6 +117,8 @@ import {
 } from "@/components/ui/table";
 
 import SaveToKeywordcluster from '@/components/SaveToKeywordCluster.vue'
+import LoadingTable from '@/components/LoadingTable.vue'
+import KeywordLookupInfo from '@/components/KeywordLookupInfo.vue'
 
 import upIcon from '@/assets/img/up_icon.png';
 import downIcon from '@/assets/img/down_icon.png';
@@ -106,13 +128,8 @@ const countries = ref([]);
 const keyword = ref("");
 const selectedCountry = ref("");
 const keywordData = ref([]);
-
-
-const selectNewCluster = () => {
-    console.log('selected');
-    newClusterSelected.value = true;
-}
-
+const isLoading = ref(false);
+const noInfoFound = ref(false);
 
 const fetchCountries = async () => {
     try {
@@ -125,27 +142,9 @@ const fetchCountries = async () => {
     }
 };
 
-const saveKeyword = async (keyword) => {
-    /*
-    const token = localStorage.getItem("token");
-    try {
-        await axios.post(
-            "http://127.0.0.1:8000/api/save-keyword",
-            { name: keyword },
-            {
-                headers: {
-                    Authorization: `Token ${token}`,
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-            }
-        );
-    } catch (error) {
-        console.error("Error saving keyword:", error);
-    }
-    */
-};
-
 const searchKeyword = async () => {
+    isLoading.value = true;
+    noInfoFound.value = false;
     const token = localStorage.getItem("token");
     try {
         const response = await axios.post(
@@ -161,20 +160,27 @@ const searchKeyword = async () => {
                 },
             }
         );
+        
+        if(response.status == 200){
+            console.log(response.data);
 
-        console.log(response.data);
-
-        keywordData.value = response.data.result.map(item => ({
-            keyword: item.keyword,
-            volume: item.keyword_info.search_volume, 
-            competition: item.keyword_info.competition_level,
-            difficulty: item.keyword_properties.keyword_difficulty,
-            intent: item.search_intent_info.main_intent,
-            trend: item.keyword_info.trend
-        }));
-
+            keywordData.value = response.data.result.map(item => ({
+                keyword: item.keyword,
+                volume: item.keyword_info.search_volume || 'Unknown',
+                competition: item.keyword_info.competition_level || 'Unknown',
+                difficulty: item.keyword_properties.keyword_difficulty || 'Unknown',
+                intent: item.search_intent_info.main_intent,
+                trend: item.keyword_info.trend
+            }));
+            
+        } else if(response.status == 204){
+            noInfoFound.value = true;
+        }
+        isLoading.value = false;
     } catch (error) {
         console.error("Error searching keyword:", error);
+        isLoading.value = false;
+        noInfoFound.value = true;
     }
 };
 
@@ -195,6 +201,8 @@ const getCompetitionColor = (competition) => {
         return 'bg-amber-200';
     } else if (competition === "LOW") {
         return 'bg-green-400';
+    } else {
+        return 'bg-slate-300';
     }
 }
 
@@ -206,6 +214,8 @@ const getDifficultyColor = (difficulty) => {
         return 'bg-amber-200';
     } else if (difficulty >= 50 && difficulty <= 100) {
         return 'bg-rose-400';
+    } else {
+        return 'bg-slate-300';
     }
 }
 
