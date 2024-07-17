@@ -39,7 +39,7 @@ def login_view():
     password = data.get('password')
     user = User.query.filter_by(username=username).first()
 
-    if user and check_password_hash(user.password_hash, password):
+    if user and check_password_hash(user.password, password):
         token = secrets.token_hex(16)
         new_token = Token(user_id=user.id, token=token)
         db.session.add(new_token)
