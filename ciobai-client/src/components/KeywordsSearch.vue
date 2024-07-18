@@ -29,66 +29,13 @@
     <div v-if="noInfoFound" class="mt-5">
         No info found
     </div>
-    <Table v-if="keywordData.length > 0 && !isLoading">
-        <TableCaption></TableCaption>
-        <TableHeader>
-            <TableRow>
-                <TableHead class="w-[100px]"> Name </TableHead>
-                <TableHead>Trend</TableHead>
-                <TableHead>Volume</TableHead>
-                <TableHead>Competition</TableHead>
-                <TableHead>Difficulty</TableHead>
-                <TableHead>Intent</TableHead>
-                <TableHead class="text-right"> Actions </TableHead>
-            </TableRow>
-        </TableHeader>
-        <TableBody>
-            <TableRow v-for="item in keywordData" :key="item.keyword">
-                <TableCell class="font-medium w-[300px]">
-                    {{ item.keyword }}
-                </TableCell>
-                <TableCell>
-                    <img :src="getTrendIcon(item.trend)" alt="trend icon" class="h-5 text-center" />
-                </TableCell>
-                <TableCell> 
-                    <div v-if="item.volume">
-                        {{ item.volume }}
-                    </div>
-                    <div v-else>
-                        Unknown
-                    </div>
-                </TableCell>
-                <TableCell> 
-                    <div v-if="item.competition">
-                        <span :class="[getCompetitionColor(item.competition), 'p-1', 'rounded']">
-                            {{ item.competition }} 
-                        </span>    
-                    </div>
-                    <div v-else>
-                        <span class="bg-slate-300 p-1 rounded">
-                            Unknown
-                        </span>
-                    </div>
-                </TableCell>
-                <TableCell> 
-                    <div v-if="item.difficulty">
-                        <span :class="[getDifficultyColor(item.difficulty), 'p-1', 'rounded']">
-                            {{ item.difficulty }} 
-                        </span>
-                    </div>
-                    <div v-else>
-                        <span class="bg-slate-300 p-1 rounded">
-                            Unknown
-                        </span>
-                    </div>
-                </TableCell>
-                <TableCell> {{ item.intent }} </TableCell>
-                <TableCell class="text-right">
-                    <SaveToKeywordcluster :keyword="item.keyword" />
-                </TableCell>
-            </TableRow>
-        </TableBody>
-    </Table>
+    <KeywordDataTable
+        v-if="keywordData.length > 0 && !isLoading"
+        :keywordData="keywordData"
+        :isLoading="isLoading"
+        :keywordClusters="keywordClusters"
+        @clusterCreated="handleClusterCreated"
+    />
 </template>
 
 <script setup>
@@ -106,23 +53,10 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-
-import SaveToKeywordcluster from '@/components/SaveToKeywordCluster.vue'
+import SaveToKeywordCluster from '@/components/SaveToKeywordCluster.vue'
 import LoadingTable from '@/components/LoadingTable.vue'
 import KeywordLookupInfo from '@/components/KeywordLookupInfo.vue'
-
-import upIcon from '@/assets/img/up_icon.png';
-import downIcon from '@/assets/img/down_icon.png';
-import rightIcon from '@/assets/img/right_icon.png';
+import KeywordDataTable from '@/components/KeywordDataTable.vue'
 
 const countries = ref([]);
 const keyword = ref("");
@@ -130,6 +64,7 @@ const selectedCountry = ref("");
 const keywordData = ref([]);
 const isLoading = ref(false);
 const noInfoFound = ref(false);
+const keywordClusters = ref([]);
 
 const fetchCountries = async () => {
     try {
@@ -187,42 +122,26 @@ const searchKeyword = async () => {
     }
 };
 
-const getTrendIcon = (trend) => {
-    if (trend === "UP") {
-        return upIcon;
-    } else if (trend === "DOWN") {
-        return downIcon;
-    } else if (trend === "SAME") {
-        return rightIcon;
+const handleClusterCreated = () => {
+    fetchKeywordClusters();
+};
+
+const fetchKeywordClusters = async () => {
+    try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("http://127.0.0.1:5000/api/get_keywords_clusters", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+        });
+        keywordClusters.value = response.data.clusters;
+    } catch (error) {
+        console.error("Error fetching keywords clusters:", error);
     }
 };
 
-const getCompetitionColor = (competition) => {
-    if (competition === 'HIGH'){
-        return 'bg-rose-400';
-    } else if (competition === "MEDIUM") {
-        return 'bg-amber-200';
-    } else if (competition === "LOW") {
-        return 'bg-green-400';
-    } else {
-        return 'bg-slate-300';
-    }
-}
-
-
-const getDifficultyColor = (difficulty) => {
-    if (difficulty >= 0 && difficulty < 30){
-        return 'bg-green-400';
-    } else if (difficulty >= 30 && difficulty < 50) {
-        return 'bg-amber-200';
-    } else if (difficulty >= 50 && difficulty <= 100) {
-        return 'bg-rose-400';
-    } else {
-        return 'bg-slate-300';
-    }
-}
-
 onMounted(() => {
     fetchCountries();
+    fetchKeywordClusters();
 });
 </script>

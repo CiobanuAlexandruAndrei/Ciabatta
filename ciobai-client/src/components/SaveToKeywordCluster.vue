@@ -1,33 +1,43 @@
 <template>
     <Toaster />
     <DropdownMenu :open="restOpen" @update:open="setNotVisible">
-        <DropdownMenuTrigger> <Button> Save </Button> </DropdownMenuTrigger>
+        <DropdownMenuTrigger> 
+            <Button :class="buttonClasses">
+                <div v-if="variant == 'copy'" class="h-full">
+                    <img src="@/assets/img/copy_icon.png" class="h-full opacity-70" />
+                </div>
+                <div v-if="variant == 'save'" class="h-full">
+                    <img src="@/assets/img/save_icon.png" class="h-full opacity-70" />
+                </div>
+                {{ buttonText }} 
+            </Button> 
+        </DropdownMenuTrigger>
         <DropdownMenuContent class="w-[200px]">
             <DropdownMenuLabel> Save to cluster </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <CreateKeywordClusterBtn @clusterCreated="handleClusterCreated" />
-            <DropdownMenuItem>
+            <div class="p-1">
                 <RadioGroup class="my-3" v-model="selectedClusterId">
-                    <div v-for="cluster in keywordClusters" :key="cluster.id">
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem :value="cluster.id" :id="cluster.id"
-                                @click="selectedClusterId = cluster.id" />
-                            <Label :htmlFor="cluster.id"> {{ cluster.name }} </Label>
-                        </div>
+                <div v-for="cluster in keywordClusters" :key="cluster.id">
+                    <div class="flex items-center space-x-2">
+                        <RadioGroupItem :value="cluster.id" :id="cluster.id"
+                            @click="selectedClusterId = cluster.id" />
+                        <Label :htmlFor="cluster.id"> {{ cluster.name }} </Label>
                     </div>
-                </RadioGroup>
-            </DropdownMenuItem>
+                </div>
+            </RadioGroup>
+            </div>
             <Button type="submit" class="p-1 text-xs h-8 w-full" @click="addKeywordToCluster()"> Save </Button>
-
         </DropdownMenuContent>
     </DropdownMenu>
 </template>
+
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, defineProps, defineEmits } from "vue";
 import axios from "axios";
-import { Toaster } from '@/components/ui/toast'
+import { Toaster } from '@/components/ui/toast';
 import { Button } from "@/components/ui/button";
-import CreateKeywordClusterBtn from '@/components/CreateKeywordClusterBtn.vue'
+import CreateKeywordClusterBtn from '@/components/CreateKeywordClusterBtn.vue';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -35,35 +45,17 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { useToast } from '@/components/ui/toast/use-toast'
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/components/ui/toast/use-toast';
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-
-const props = defineProps(['keyword'])
+const props = defineProps(['keyword', 'keywordClusters', 'buttonClasses', 'buttonText', 'variant']);
 const selectedClusterId = ref("");
-const keywordClusters = ref("");
-
 const showSelectClusterAlert = ref(false);
 const restOpen = ref(false);
-
-const { toast } = useToast()
-
-
-const fetchKeywordClusters = async () => {
-    try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("http://127.0.0.1:8000/api/get-keyword-clusters", {
-            headers: {
-                Authorization: `Token ${token}`
-            },
-        });
-        keywordClusters.value = response.data.clusters;
-    } catch (error) {
-        console.error("Error fetching keywords clusters:", error);
-    }
-};
+const emit = defineEmits(['clusterCreated']);
+const { toast } = useToast();
 
 const addKeywordToCluster = async () => {
     console.log(selectedClusterId.value);
@@ -77,12 +69,12 @@ const addKeywordToCluster = async () => {
 
     try {
         const token = localStorage.getItem("token");
-        const response = await axios.post("http://127.0.0.1:8000/api/add-keyword-to-cluster", {
+        const response = await axios.post("http://127.0.0.1:5000/api/add_keyword_to_cluster", {
             keyword_name: props.keyword,
             cluster_id: selectedClusterId.value
         }, {
             headers: {
-                Authorization: `Token ${token}`,
+                Authorization: `Bearer ${token}`,
                 "Content-Type": "application/x-www-form-urlencoded",
             },
         });
@@ -91,7 +83,7 @@ const addKeywordToCluster = async () => {
             console.log('Keyword added to cluster successfully');
             restOpen.value = false;
             toast({
-                class: 'top-0 right-0 flex fixed md:max-w-[420px] md:top-4 md:right-4 shadow-none',
+                class: 'top-0 right-0 flex fixed md:max-w-[420px] md:top-4 md:right-4 shadow-none text-green-600',
                 description: 'Success, Keyword added to cluster successfully!',
             });
 
@@ -105,15 +97,11 @@ const addKeywordToCluster = async () => {
 }
 
 const handleClusterCreated = () => {
-    fetchKeywordClusters();
+    emit("clusterCreated");
 };
 
 const setNotVisible = () => {
     restOpen.value = !restOpen.value;
 }
-
-onMounted(() => {
-    fetchKeywordClusters();
-});
 
 </script>

@@ -39,8 +39,12 @@ import { useRouter } from 'vue-router'
 // Importing images
 import dashboardIcon from '@/assets/img/charts_icon.png'
 import keywordsIcon from '@/assets/img/keyword_icon.png'
-import settingsIcon from '@/assets/img/settings_icon.png'
 import logoutIcon from '@/assets/img/logout_icon.png'
+import contentIcon from '@/assets/img/content_icon.png'
+import seoIcon from '@/assets/img/seo_icon.png'
+import settingsIcon from '@/assets/img/settings_icon.png'
+import calendarIcon from '@/assets/img/calendar_icon.png'
+import wordpressIcon from '@/assets/img/wordpress_icon.png'
 
 interface MenuItem {
   label: string
@@ -51,6 +55,12 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   { label: 'Dashboard', route: '/', icon: dashboardIcon },
   { label: 'Keywords', route: '/keywords', icon: keywordsIcon },
+  { label: 'Content Generation', route: '/keywords', icon: contentIcon },
+  { label: 'Blog Posts', route: '/keywords', icon: wordpressIcon },
+  { label: 'SEO Heist', route: '/keywords', icon: seoIcon },
+  { label: 'Calendar', route: '/keywords', icon: calendarIcon },
+  { label: 'Settings', route: '/keywords', icon: settingsIcon },
+
 ]
 
 const isCollapsed = ref(false)

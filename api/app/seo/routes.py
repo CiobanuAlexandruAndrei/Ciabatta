@@ -6,9 +6,9 @@ from flask import request, jsonify
 from flask_httpauth import HTTPTokenAuth
 from ..extensions import db
 from ..security.models import Profile, User, Token
-from .models import KeywordData, APIUsed, APICostRecord, KeywordCluster, Keyword
-from .forms import KeywordSearchForm, KeywordForm, KeywordGenerationForm, AddKeywordToClusterForm, KeywordClusterForm
-from .serializers import KeywordClusterSchema, APICostRecordSchema, KeywordSchema
+from .models import *
+from .forms import *
+from .serializers import *
 from libs.data_client import RestClient
 from libs.pricing_openai import openai_api_calculate_cost
 from dotenv import load_dotenv
@@ -46,6 +46,7 @@ def search_keyword():
     if form.validate_on_submit():
         keyword = form.name.data
         country = form.country.data
+        limit = form.limit.data
 
         stored_keyword = KeywordData.query.filter_by(name=keyword, country=country).first()
 
@@ -59,7 +60,7 @@ def search_keyword():
                 keyword=keyword,
                 location_name=country,
                 language_name="English",
-                limit=10,
+                limit=limit if limit else 10,
                 include_serp_info=True,
                 include_seed_keyword=True,
             )
@@ -71,9 +72,14 @@ def search_keyword():
                     return jsonify({'message': 'Service not available', 'details': response}), 503
                 elif response.get('tasks') and response['tasks'][0].get('result'):
                     api_name = "DataForSEO"
-                    api_used, created = APIUsed.query.get_or_create(name=api_name)
+                    api_used = APIUsed.query.filter_by(name=api_name).first()
+                    if not api_used:
+                        api_used = APIUsed(name=api_name)
+                        db.session.add(api_used)
+                        db.session.commit()
 
-                    APICostRecord(cost=response['cost'], api_used_name=api_used.name)
+                    cost_record = APICostRecord(cost=response['cost'], api_used_name=api_used.name)
+                    db.session.add(cost_record)
                     db.session.commit()
 
                     results = response['tasks'][0]['result'][0].get('items', [])
@@ -171,14 +177,19 @@ def generate_keyword_suggestions_view():
             ]
         )
 
-        keywords = openai_response.choices[0].text.strip()
-        cost = openai_api_calculate_cost(client.usage)
+        keywords = openai_response.choices[0].message.content
+        cost = openai_api_calculate_cost(openai_response.usage)
         generated_keywords = json.loads(keywords)
 
         api_name = "OpenAI"
-        api_used, created = APIUsed.query.get_or_create(name=api_name)
+        api_used = APIUsed.query.filter_by(name=api_name).first()
+        if not api_used:
+            api_used = APIUsed(name=api_name)
+            db.session.add(api_used)
+            db.session.commit()
 
-        APICostRecord(cost=cost, api_used_name=api_used.name)
+        cost_record = APICostRecord(cost=cost, api_used_name=api_used.name)
+        db.session.add(cost_record)
         db.session.commit()
         
         return jsonify({'message': 'Keywords generated', 'result': generated_keywords}), 200
@@ -202,25 +213,59 @@ def get_api_usage_costs():
 def add_keyword_to_cluster():
     user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
     form = AddKeywordToClusterForm()
+    
     if form.validate_on_submit():
         keyword_name = form.keyword_name.data
         cluster_id = form.cluster_id.data
+        
         cluster = KeywordCluster.query.filter_by(id=cluster_id, profile_id=user_profile.id).first()
+        
         if not cluster:
             return jsonify({'message': 'Keyword cluster not found'}), 404
         
         keyword = Keyword.query.filter_by(name=keyword_name).first()
+        
         if not keyword:
             keyword = Keyword(name=keyword_name)
             db.session.add(keyword)
             db.session.commit()
-
+        else:
+            if keyword in cluster.keywords:
+                return jsonify({'message': 'Keyword already exists in the cluster'}), 400
+        
         cluster.keywords.append(keyword)
         db.session.commit()
-
+        
         return jsonify({'message': 'Keyword added to cluster successfully'}), 201
     else:
+        print(form.errors)
         return jsonify({'message': 'Error adding keyword to cluster', 'errors': form.errors}), 400
+
+
+@seo.route('/check_keyword_in_cluster', methods=['POST'])
+@auth.login_required
+def check_keyword_in_cluster():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+    form = AddKeywordToClusterForm()
+    
+    if form.validate_on_submit():
+        keyword_name = form.keyword_name.data
+        cluster_id = form.cluster_id.data
+        
+        cluster = KeywordCluster.query.filter_by(id=cluster_id, profile_id=user_profile.id).first()
+        
+        if not cluster:
+            return jsonify({'message': 'Keyword cluster not found'}), 404
+        
+        keyword = Keyword.query.filter_by(name=keyword_name).first()
+        
+        if keyword in cluster.keywords:
+            return jsonify({'message': 'Keyword exists in the cluster'}), 200
+        else:
+            return jsonify({'message': 'Keyword does not exist in the cluster'}), 404
+    else:
+        return jsonify({'message': 'Invalid form data', 'errors': form.errors}), 400
+
 
 @seo.route('/create_keyword_cluster', methods=['POST'])
 @auth.login_required
@@ -241,7 +286,8 @@ def create_keyword_cluster():
 @auth.login_required
 def delete_keyword_cluster():
     user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
-    form = KeywordClusterForm()
+    form = KeywordClusterDeleteForm()
+
     if form.validate_on_submit():
         cluster_id = form.cluster_id.data
         cluster = KeywordCluster.query.filter_by(id=cluster_id, profile_id=user_profile.id).first()
@@ -254,3 +300,30 @@ def delete_keyword_cluster():
         return jsonify({'message': 'Keyword cluster deleted successfully'}), 200
     else:
         return jsonify({'message': 'Error deleting keyword cluster', 'errors': form.errors}), 400
+
+@seo.route('/delete_keyword_from_cluster', methods=['DELETE'])
+@auth.login_required
+def delete_keyword_from_cluster():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+    form = AddKeywordToClusterForm()
+    
+    if form.validate_on_submit():
+        keyword_name = form.keyword_name.data
+        cluster_id = form.cluster_id.data
+        
+        cluster = KeywordCluster.query.filter_by(id=cluster_id, profile_id=user_profile.id).first()
+        
+        if not cluster:
+            return jsonify({'message': 'Keyword cluster not found'}), 404
+        
+        keyword = Keyword.query.filter_by(name=keyword_name).first()
+        
+        if not keyword or keyword not in cluster.keywords:
+            return jsonify({'message': 'Keyword not found in the cluster'}), 404
+        
+        cluster.keywords.remove(keyword)
+        db.session.commit()
+        
+        return jsonify({'message': 'Keyword deleted from cluster successfully'}), 200
+    else:
+        return jsonify({'message': 'Error deleting keyword from cluster', 'errors': form.errors}), 400

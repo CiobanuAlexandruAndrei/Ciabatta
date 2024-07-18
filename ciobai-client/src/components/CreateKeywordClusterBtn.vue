@@ -7,7 +7,7 @@
         <DialogHeader>
           <DialogTitle>Create Keywords Cluster</DialogTitle>
         </DialogHeader>
-        <Input v-model="clusterName" class="mt-2" placeholder="Cluster name" />
+        <Input v-model="clusterName" class="mt-2" placeholder="Cluster name" @keyup.enter="createCluster" />
         
         <DialogFooter class="w-full">
             <Button type="submit" @click="createCluster" class="mt-4 w-full">Save</Button>
@@ -41,11 +41,11 @@ const createCluster = async () => {
   }
   const token = localStorage.getItem("token");
   try {
-    const response = await axios.post('http://127.0.0.1:8000/api/create-keyword-cluster', {
+    const response = await axios.post('http://127.0.0.1:5000/api/create_keyword_cluster', {
         keyword_cluster_name: clusterName.value,
     }, {
       headers: {
-        Authorization: `Token ${token}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
     });

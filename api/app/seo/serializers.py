@@ -10,6 +10,8 @@ class KeywordSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True
 
 class KeywordClusterSchema(ma.SQLAlchemyAutoSchema):
+    keywords = ma.Nested('KeywordSchema', many=True)
+
     class Meta:
         model = KeywordCluster
         load_instance = True
