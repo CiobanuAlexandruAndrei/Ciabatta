@@ -1,4 +1,0 @@
-django-cors-headers
-django-rest
-django
-python-dotenv
