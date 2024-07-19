@@ -12,8 +12,9 @@ from .serializers import *
 from libs.data_client import RestClient
 from libs.pricing_openai import openai_api_calculate_cost
 from dotenv import load_dotenv
-
+import pandas as pd
 from . import seo  
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -197,9 +198,9 @@ def generate_keyword_suggestions_view():
         print(form.errors)
         return jsonify({'message': 'Error generating keywords', 'errors': form.errors}), 500
     
-@seo.route('/get_api_usage_costs', methods=['GET'])
+@seo.route('/get_all_api_usage_costs', methods=['GET'])
 @auth.login_required
-def get_api_usage_costs():
+def get_all_api_usage_costs():
     user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
     data = {}
     schema = APICostRecordSchema(many=True)
@@ -208,7 +209,77 @@ def get_api_usage_costs():
         data[api_obj.name] = schema.dump(cost_records)
     
     return jsonify({'message': 'API cost data retrieved successfully', 'data': data}), 200
+
+@seo.route('/get_api_usage_costs', methods=['POST'])
+@auth.login_required
+def get_api_usage_costs():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
     
+    form = PeriodForm()
+    if form.validate_on_submit():
+        period = form.period.data
+    
+        data = []
+        schema = APICostRecordSchema(many=True)
+
+        for api_obj in APIUsed.query.all():
+            cost_records = APICostRecord.query.filter_by(api_used_name=api_obj.name).all()
+            for record in cost_records:
+                data.append({
+                    'api_name': api_obj.name,
+                    'cost': record.cost,
+                    'timestamp': record.timestamp
+                })
+
+        # Convert to DataFrame for easier manipulation
+        df = pd.DataFrame(data)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+        # Initialize an empty DataFrame for grouped data
+        df_grouped = pd.DataFrame()
+
+        if period == 'week':
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=6)
+            df_filtered = df[(df['timestamp'] >= start_date) & (df['timestamp'] <= end_date)]
+            df_filtered['day'] = df_filtered['timestamp'].dt.date
+            df_grouped = df_filtered.groupby(['api_name', 'day']).agg({'cost': 'sum', 'timestamp': 'count'}).reset_index()
+        elif period == 'month':
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=29)
+            df_filtered = df[(df['timestamp'] >= start_date) & (df['timestamp'] <= end_date)]
+            df_filtered['day'] = df_filtered['timestamp'].dt.date
+            df_grouped = df_filtered.groupby(['api_name', 'day']).agg({'cost': 'sum', 'timestamp': 'count'}).reset_index()
+        elif period == 'year':
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=365)
+            df_filtered = df[(df['timestamp'] >= start_date) & (df['timestamp'] <= end_date)]
+            df_filtered['month'] = df_filtered['timestamp'].dt.to_period('M')
+            df_grouped = df_filtered.groupby(['api_name', 'month']).agg({'cost': 'sum', 'timestamp': 'count'}).reset_index()
+        else:
+            return jsonify({'message': 'Invalid period specified'}), 400
+
+        # Prepare the response data
+        response_data = {}
+        if period == 'year':
+            df_grouped['period'] = df_grouped['month'].astype(str)
+        else:
+            df_grouped['period'] = df_grouped['day'].astype(str)
+
+        for api_name in df_grouped['api_name'].unique():
+            api_data = df_grouped[df_grouped['api_name'] == api_name]
+            response_data[api_name] = {
+                'costs': api_data['cost'].tolist(),
+                'periods': api_data['period'].tolist(),
+                'call_counts': api_data['timestamp'].tolist()  # This line adds the call count
+            }
+
+        return jsonify({'message': 'API cost data retrieved successfully', 'data': response_data}), 200
+    
+    else:
+        print(form.errors)
+        return jsonify({'message': 'Error with form', 'errors': form.errors}), 400
+
 @seo.route('/add_keyword_to_cluster', methods=['POST'])
 @auth.login_required
 def add_keyword_to_cluster():
@@ -328,3 +399,4 @@ def delete_keyword_from_cluster():
         return jsonify({'message': 'Keyword deleted from cluster successfully'}), 200
     else:
         return jsonify({'message': 'Error deleting keyword from cluster', 'errors': form.errors}), 400
+

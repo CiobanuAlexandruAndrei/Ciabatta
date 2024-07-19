@@ -25,3 +25,6 @@ class KeywordClusterForm(FlaskForm):
 
 class KeywordClusterDeleteForm(FlaskForm):
     cluster_id = IntegerField('cluster_id', validators=[DataRequired()])
+
+class PeriodForm(FlaskForm):
+    period = StringField('period', validators=[DataRequired()])
