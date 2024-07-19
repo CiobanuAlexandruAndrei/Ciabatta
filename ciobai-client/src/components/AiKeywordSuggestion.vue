@@ -2,7 +2,6 @@
     <div>
         <div class="flex gap-4 mt-12 mb-4">
             <Input v-model="topicName" placeholder="Topic or Keyword" />
-        
             <Select v-model="intentName">
                 <SelectTrigger>
                     <SelectValue placeholder="Intent" />
@@ -16,8 +15,8 @@
             </Select>
         </div>
         <div>
-            <Input v-model="additionaInstructions" placeholder="Additional Instructions" />
-            <Button @click="generateKeywords()" variant="secondary" class="mt-4">Generate</Button>
+            <Input v-model="additionalInstructions" placeholder="Additional Instructions" />
+            <Button @click="generateKeywords" variant="secondary" class="mt-4">Generate</Button>
         </div>
         <div v-if="isLoading" class="mt-5">
             <LoadingTable />
@@ -37,7 +36,9 @@
                         <TableCell class="">
                             <div class="flex justify-end gap-1">
                                 <TestKeywordsButton variant="one" :keywords="[item]" />
-                                <SaveToKeywordcluster @clusterCreated="handleClusterCreated" variant="save" buttonClasses="bg-green-300 hover:bg-green-400"  :keyword="item" :keywordClusters="keywordClusters" />
+                                <SaveToKeywordcluster @clusterCreated="handleClusterCreated" variant="save"
+                                    buttonClasses="bg-green-300 hover:bg-green-400" :keyword="item"
+                                    :keywordClusters="keywordClusters" />
                             </div>
                         </TableCell>
                     </TableRow>
@@ -48,10 +49,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import axios from "axios";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { ref, computed, onMounted } from 'vue';
+import { useKeywordGeneratorStore } from '@/store/keywordGenerator';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import SaveToKeywordcluster from '@/components/SaveToKeywordCluster.vue';
 import LoadingTable from '@/components/LoadingTable.vue';
 import TestKeywordsButton from '@/components/TestKeywordsButton.vue';
@@ -74,63 +75,34 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
-const topicName = ref("");
-const intentName = ref("");
-const additionaInstructions = ref("");
-const keywords = ref([]);
-const isLoading = ref(false);
-const keywordClusters = ref([]);
+const keywordGeneratorStore = useKeywordGeneratorStore();
+
+const topicName = computed({
+    get: () => keywordGeneratorStore.topicName,
+    set: (value) => keywordGeneratorStore.setTopicName(value),
+});
+const intentName = computed({
+    get: () => keywordGeneratorStore.intentName,
+    set: (value) => keywordGeneratorStore.setIntentName(value),
+});
+const additionalInstructions = computed({
+    get: () => keywordGeneratorStore.additionalInstructions,
+    set: (value) => keywordGeneratorStore.setAdditionalInstructions(value),
+});
 
 const generateKeywords = async () => {
-    isLoading.value = true;
-    const token = localStorage.getItem("token");
-    try {
-        const response = await axios.post(
-            "http://127.0.0.1:5000/api/generate_keyword_suggestions",
-            {
-                topic: topicName.value,
-                intent: intentName.value,
-                additional_instructions: additionaInstructions.value,
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-            }
-        );
-
-        keywords.value = response.data.result.keywords;
-        isLoading.value = false;
-
-    } catch (error) {
-        console.error("Error generating keyword:", error);
-        isLoading.value = false;
-    }
+    await keywordGeneratorStore.generateKeywords();
 };
 
 const handleClusterCreated = () => {
-    // Refresh components by re-fetching the keyword clusters
-    fetchKeywordClusters();
-};
-
-
-const fetchKeywordClusters = async () => {
-    try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("http://127.0.0.1:5000/api/get_keywords_clusters",
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
-            });
-        keywordClusters.value = response.data.clusters;
-    } catch (error) {
-        console.error("Error fetching keywords clusters:", error);
-    }
+    keywordGeneratorStore.handleClusterCreated();
 };
 
 onMounted(async () => {
-    fetchKeywordClusters();
+    await keywordGeneratorStore.fetchKeywordClusters();
 });
+
+const isLoading = computed(() => keywordGeneratorStore.isLoading);
+const keywords = computed(() => keywordGeneratorStore.keywords);
+const keywordClusters = computed(() => keywordGeneratorStore.keywordClusters);
 </script>

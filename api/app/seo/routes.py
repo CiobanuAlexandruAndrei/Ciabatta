@@ -169,7 +169,7 @@ def generate_keyword_suggestions_view():
         prompt = f'Act like a SEO expert, you are also an expert in the specified topic below. Generate 20 SEO keywords that must help rank my company on Google;\nTopic: {topic};\nSearch Intent:{intent}\nAdditional instructions:{additional_instructions}'
         client = OpenAI()
         openai_response = client.chat.completions.create(
-            model='gpt-3.5-turbo-1106',
+            model='gpt-4o-mini',
             response_format={"type":"json_object"},
             messages=[
                 {"role":"system","content":"Provide output in valid JSON. The data schema should be like this: "+json.dumps(example_json)},
@@ -194,6 +194,7 @@ def generate_keyword_suggestions_view():
         
         return jsonify({'message': 'Keywords generated', 'result': generated_keywords}), 200
     else:
+        print(form.errors)
         return jsonify({'message': 'Error generating keywords', 'errors': form.errors}), 500
     
 @seo.route('/get_api_usage_costs', methods=['GET'])

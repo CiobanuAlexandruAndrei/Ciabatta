@@ -22,126 +22,66 @@
         </Button>
         <KeywordLookupInfo />
     </div>
-    
+
     <div v-if="isLoading" class="mt-5">
         <LoadingTable />
     </div>
+    
     <div v-if="noInfoFound" class="mt-5">
         No info found
     </div>
-    <KeywordDataTable
-        v-if="keywordData.length > 0 && !isLoading"
-        :keywordData="keywordData"
-        :isLoading="isLoading"
-        :keywordClusters="keywordClusters"
-        @clusterCreated="handleClusterCreated"
-    />
+    <KeywordDataTable v-if="keywordData.length > 0 && !isLoading"
+        :keywordData="keywordData" :isLoading="isLoading"
+        :keywordClusters="keywordClusters" @clusterCreated="handleClusterCreated" />
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import axios from "axios";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useKeywordsStore } from '@/store/keywords';
+import { ref, computed, onMounted, watch } from 'vue';
+import { Input } from '@/components/ui/input'
 import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-
-import SaveToKeywordCluster from '@/components/SaveToKeywordCluster.vue'
-import LoadingTable from '@/components/LoadingTable.vue'
-import KeywordLookupInfo from '@/components/KeywordLookupInfo.vue'
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import KeywordDataTable from '@/components/KeywordDataTable.vue'
+import LoadingTable from '@/components/LoadingTable.vue'
 
-const countries = ref([]);
-const keyword = ref("");
-const selectedCountry = ref("");
-const keywordData = ref([]);
-const isLoading = ref(false);
-const noInfoFound = ref(false);
-const keywordClusters = ref([]);
+const keywordsStore = useKeywordsStore();
 
-const fetchCountries = async () => {
-    try {
-        const response = await axios.get("https://restcountries.com/v3.1/all");
-        countries.value = response.data.sort((a, b) =>
-            a.name.common.localeCompare(b.name.common)
-        );
-    } catch (error) {
-        console.error("Error fetching countries:", error);
-    }
-};
+const keyword = ref(keywordsStore.keyword);
+const selectedCountry = ref(keywordsStore.selectedCountry);
+
+watch(keyword, (newValue) => {
+    keywordsStore.setKeyword(newValue);
+});
+
+watch(selectedCountry, (newValue) => {
+    keywordsStore.setSelectedCountry(newValue);
+});
 
 const searchKeyword = async () => {
-    isLoading.value = true;
-    noInfoFound.value = false;
-    const token = localStorage.getItem("token");
-    const csrf = localStorage.getItem("csrf");
-
-    try {
-        const response = await axios.post(
-            "http://127.0.0.1:5000/api/search_keyword",
-            {
-                csrf_token: csrf,
-                name: keyword.value,
-                country: selectedCountry.value,
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-            }
-        );
-        
-        if(response.status == 200){
-            console.log(response.data);
-
-            keywordData.value = response.data.result.map(item => ({
-                keyword: item.keyword,
-                volume: item.keyword_info.search_volume || 'Unknown',
-                competition: item.keyword_info.competition_level || 'Unknown',
-                difficulty: item.keyword_properties.keyword_difficulty || 'Unknown',
-                intent: item.search_intent_info.main_intent,
-                trend: item.keyword_info.trend
-            }));
-            
-        } else if(response.status == 204){
-            noInfoFound.value = true;
-        }
-        isLoading.value = false;
-    } catch (error) {
-        console.error("Error searching keyword:", error);
-        isLoading.value = false;
-        noInfoFound.value = true;
-    }
+    await keywordsStore.searchKeyword();
 };
 
 const handleClusterCreated = () => {
-    fetchKeywordClusters();
-};
-
-const fetchKeywordClusters = async () => {
-    try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("http://127.0.0.1:5000/api/get_keywords_clusters", {
-            headers: {
-                Authorization: `Bearer ${token}`
-            },
-        });
-        keywordClusters.value = response.data.clusters;
-    } catch (error) {
-        console.error("Error fetching keywords clusters:", error);
-    }
+    keywordsStore.handleClusterCreated();
 };
 
 onMounted(() => {
-    fetchCountries();
-    fetchKeywordClusters();
+    keywordsStore.fetchKeywordClusters();
+    keywordsStore.fetchCountries();
 });
+
+const countries = computed(() => keywordsStore.countries);
+const isLoading = computed(() => keywordsStore.isLoading);
+const noInfoFound = computed(() => keywordsStore.noInfoFound);
+const keywordData = computed(() => keywordsStore.keywordData);
+const keywordClusters = computed(() => keywordsStore.keywordClusters);
+
 </script>

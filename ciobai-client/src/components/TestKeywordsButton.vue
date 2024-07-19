@@ -31,7 +31,7 @@
                         </SelectGroup>
                     </SelectContent>
                 </Select>
-                <ScrollArea class="max-h-[300px] w-full p-4 px-4" v-if="keywordData.length > 0">
+                <ScrollArea class="h-[300px] w-full p-4 px-4" v-if="keywordData.length > 0">
                     <KeywordDataTable
                         :keywordData="keywordData"
                         :isLoading="isLoading"
