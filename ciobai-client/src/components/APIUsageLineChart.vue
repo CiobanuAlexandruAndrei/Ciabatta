@@ -1,5 +1,5 @@
 <template>
-    <canvas ref="canvas" class="h-full w-full"></canvas>
+    <canvas ref="canvas" class="h-full w-full max-h-[300px]"></canvas>
 </template>
 
 <script setup>

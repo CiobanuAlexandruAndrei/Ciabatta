@@ -12,24 +12,22 @@
             <Table class="mt-3 w-full">
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Semantically Related Topic</TableHead>
-                        <TableHead>Variations on the Topic</TableHead>
-                        <TableHead>Clickbait Style Title</TableHead>
+                        <TableHead>Topic Category</TableHead>
+                        <TableHead>Topic Variations</TableHead>
+                        <TableHead>Titles</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     <template v-for="(topic, topicIndex) in ideas.topics" :key="topicIndex">
-                        <TableRow v-if="topic.unique_semantically_related_topic">
-                            <TableCell :rowspan="topic.variations.length" class="text-sm font-medium">
-                                {{ topic.unique_semantically_related_topic }}
-                            </TableCell>
-                            <TableCell v-if="topic.variations[0]?.variation" class="text-sm">{{ topic.variations[0].variation }}</TableCell>
-                            <TableCell v-if="topic.variations[0]?.clickbait_title" class="text-sm">{{ topic.variations[0].clickbait_title }}</TableCell>
-                        </TableRow>
-                        <TableRow v-for="(variation, varIndex) in topic.variations.slice(1)" :key="varIndex">
-                            <TableCell v-if="variation.variation" class="text-sm">{{ variation.variation }}</TableCell>
-                            <TableCell v-if="variation.clickbait_title" class="text-sm">{{ variation.clickbait_title }}</TableCell>
-                        </TableRow>
+                        <template v-for="(variation, varIndex) in topic.variations" :key="varIndex">
+                            <TableRow :class="{'bg-gray-100': isOddRow(topicIndex, varIndex)}">
+                                <TableCell v-if="varIndex === 0" :rowspan="topic.variations.length" class="text-sm font-medium">
+                                    {{ topic.unique_semantically_related_topic }}
+                                </TableCell>
+                                <TableCell v-if="variation.variation" class="text-sm">{{ variation.variation }}</TableCell>
+                                <TableCell v-if="variation.clickbait_title" class="text-sm">{{ variation.clickbait_title }}</TableCell>
+                            </TableRow>
+                        </template>
                     </template>
                 </TableBody>
             </Table>
@@ -56,6 +54,10 @@ import {
 const topic = ref('');
 const additionalInstructions = ref('');
 const ideas = ref({ topics: [] });
+
+const isOddRow = (topicIndex, varIndex) => {
+    return (topicIndex * ideas.value.topics[0].variations.length + varIndex) % 2 === 1;
+};
 
 const generateIdeas = async () => {
     const token = localStorage.getItem('token');
@@ -114,3 +116,9 @@ const generateIdeas = async () => {
     }
 };
 </script>
+
+<style>
+.bg-gray-100 {
+    background-color: #f7fafc;
+}
+</style>

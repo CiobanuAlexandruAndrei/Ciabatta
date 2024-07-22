@@ -2,7 +2,7 @@ import os
 import json
 import openai
 from openai import OpenAI
-from flask import request, jsonify, Response
+from flask import request, jsonify, Response, current_app, stream_with_context
 from flask_httpauth import HTTPTokenAuth
 from ..extensions import db
 from ..security.models import Profile, User, Token
@@ -234,7 +234,7 @@ def generate_content_ideas_view():
         }
 
         prompt = (
-            f"give me 10 semantically relevant but unique topics under the main category of {topic}, "
+            f"give me precisely 10 semantically relevant but unique topics under the main category of {topic}, "
             f"and for each, give me 10 different variations of the topic that each address a different search intent. "
             f"Make it in table format with the following columns: column 1: The unique semantically related topic, "
             f"column 2: the different variations on it, column 3: an intriguing, clickbait style title.\n\n"
@@ -242,9 +242,9 @@ def generate_content_ideas_view():
         )
 
         usage_data = None
+        client = OpenAI()
 
         def generate():
-            client = OpenAI()
             stream = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
@@ -261,6 +261,19 @@ def generate_content_ideas_view():
                 if hasattr(chunk, 'usage') and chunk.usage:
                     print(chunk.usage)
                     usage_data = chunk.usage
+                    cost = openai_api_calculate_cost(usage_data)
+
+                    api_name = "OpenAI"
+                    api_used = APIUsed.query.filter_by(name=api_name).first()
+
+                    if not api_used:
+                        api_used = APIUsed(name=api_name)
+                        db.session.add(api_used)
+                        db.session.commit()
+
+                    cost_record = APICostRecord(cost=cost, api_used_name=api_used.name)
+                    db.session.add(cost_record)
+                    db.session.commit()
                 
                 # Check for the choices list and its content
                 if hasattr(chunk, 'choices') and len(chunk.choices) > 0:
@@ -268,22 +281,8 @@ def generate_content_ideas_view():
                         if chunk.choices[0].delta.content is not None:
                             yield chunk.choices[0].delta.content
 
-        if usage_data:
-            cost = openai_api_calculate_cost(usage_data)
-
-            api_name = "OpenAI"
-            api_used = APIUsed.query.filter_by(name=api_name).first()
-
-            if not api_used:
-                api_used = APIUsed(name=api_name)
-                db.session.add(api_used)
-                db.session.commit()
-
-            cost_record = APICostRecord(cost=cost, api_used_name=api_used.name)
-            db.session.add(cost_record)
-            db.session.commit()
-
-        return Response(generate(), content_type='application/json')
+        with current_app.app_context():
+            return Response(stream_with_context(generate()), content_type='application/json')
     else:
         print(form.errors)
         return jsonify({'message': 'Error generating topics', 'errors': form.errors}), 500

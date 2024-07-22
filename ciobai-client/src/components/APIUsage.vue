@@ -8,7 +8,7 @@
 
         <div class="flex mt-8 gap-5 max-w-full">
             <div v-for="([apiName, api], index) in Object.entries(apiUsage)" :key="index" class="flex">
-                <div class="h-[400px]">
+                <div class="h-[400px] max-h-[400px]">
                     <div class="font-bold"> {{ apiName }} </div>
                     <div>Costs: {{ api.costs.reduce((a, b) => a + b, 0).toFixed(2) }} $ </div>
                     <div>Calls: {{ api.call_counts.reduce((total, current) => total + current, 0) }} </div>
