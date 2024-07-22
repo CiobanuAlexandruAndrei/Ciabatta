@@ -16,6 +16,10 @@ class KeywordGenerationForm(FlaskForm):
     intent = StringField('intent', validators=[DataRequired()])
     additional_instructions = StringField('additional_instructions', validators=[Optional()])
 
+class ContentIdeasForm(FlaskForm):
+    topic = StringField('topic', validators=[DataRequired()])
+    additional_instructions = StringField('additional_instructions', validators=[Optional()])
+
 class AddKeywordToClusterForm(FlaskForm):
     keyword_name = StringField('keyword_name', validators=[DataRequired()])
     cluster_id = IntegerField('cluster_id', validators=[DataRequired()])
@@ -28,3 +32,8 @@ class KeywordClusterDeleteForm(FlaskForm):
 
 class PeriodForm(FlaskForm):
     period = StringField('period', validators=[DataRequired()])
+
+
+class UpdateKeywordClusterNameForm(FlaskForm):
+    keyword_cluster_id = IntegerField('keyword_cluster_id', validators=[DataRequired()])
+    keyword_cluster_name = StringField('keyword_cluster_name', validators=[DataRequired()])

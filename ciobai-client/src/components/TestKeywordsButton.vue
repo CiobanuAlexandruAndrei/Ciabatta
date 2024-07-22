@@ -31,7 +31,7 @@
                         </SelectGroup>
                     </SelectContent>
                 </Select>
-                <ScrollArea class="h-[300px] w-full p-4 px-4" v-if="keywordData.length > 0">
+                <ScrollArea class="h-[300px] w-full p-4 px-4" v-if="keywordData.length > 0 && !isLoading">
                     <KeywordDataTable
                         :keywordData="keywordData"
                         :isLoading="isLoading"
@@ -40,7 +40,7 @@
                     />
                 </ScrollArea>
                 <div v-if="isLoading">
-                    Loading ...
+                    <img src="@/assets/img/dots-loading.gif" class="h-[35px]" />
                 </div>
             </div>
             <Button v-if="!dataRetrieved" type="submit" variant="outline" class="p-1 text-xs h-8 w-full" @click="searchKeywords"> Start </Button>

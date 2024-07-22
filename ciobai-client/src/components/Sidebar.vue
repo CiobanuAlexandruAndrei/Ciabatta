@@ -55,7 +55,7 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   { label: 'Dashboard', route: '/', icon: dashboardIcon },
   { label: 'Keywords', route: '/keywords', icon: keywordsIcon },
-  { label: 'Content Generation', route: '/keywords', icon: contentIcon },
+  { label: 'Content Generation', route: '/content-generation', icon: contentIcon },
   { label: 'Blog Posts', route: '/keywords', icon: wordpressIcon },
   { label: 'SEO Heist', route: '/keywords', icon: seoIcon },
   { label: 'Calendar', route: '/keywords', icon: calendarIcon },

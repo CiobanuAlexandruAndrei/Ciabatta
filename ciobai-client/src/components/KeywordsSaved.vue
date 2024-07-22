@@ -24,7 +24,8 @@
                     </div>
                 </CollapsibleTrigger>
                 <CollapsibleContent class="w-full">
-                    <div class="pt-4 px-1">
+                    <div class="pt-4 px-1 flex justify-end gap-2">
+                        <EditClusterNameDialog :cluster="item" @clusterUpdated="handleClusterCreated" />
                         <AlertDialog>
                             <AlertDialogTrigger as-child>
                                 <Button variant="destructive" class="h-[25px] flex gap-3 items-center text-xs"
@@ -98,7 +99,6 @@
         </div>
     </div>
 </template>
-
 <script setup>
 import { ref, onMounted } from "vue";
 import axios from "axios";
@@ -122,13 +122,12 @@ import {
 import CreateKeywordClusterBtn from '@/components/CreateKeywordClusterBtn.vue'
 import SaveToKeywordCluster from "@/components/SaveToKeywordCluster.vue";
 import TestKeywordsButton from '@/components/TestKeywordsButton.vue';
+import EditClusterNameDialog from '@/components/EditClusterNameDialog.vue';
 
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
-    TableHead,
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
@@ -149,7 +148,6 @@ const fetchKeywordClusters = async () => {
                 },
             });
         keywordClusters.value = response.data.clusters;
-        console.log(keywordClusters.value);
     } catch (error) {
         console.error("Error fetching keywords clusters:", error);
     }

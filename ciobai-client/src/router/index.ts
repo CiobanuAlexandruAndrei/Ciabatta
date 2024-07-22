@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import LogoutView from '@/views/LogoutView.vue'
 import KeywordsView from '@/views/KeywordsView.vue'
+import ContentGenerationView from '@/views/ContentGenerationView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,11 @@ const router = createRouter({
       path: '/keywords',
       name: 'keywords',
       component: KeywordsView
+    },
+    {
+      path: '/content-generation',
+      name: 'content',
+      component: ContentGenerationView
     },
   ]
 })

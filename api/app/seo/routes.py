@@ -198,6 +198,72 @@ def generate_keyword_suggestions_view():
         print(form.errors)
         return jsonify({'message': 'Error generating keywords', 'errors': form.errors}), 500
     
+@seo.route('/generate_content_ideas', methods=['POST'])
+@auth.login_required
+def generate_content_ideas_view():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+    form = ContentIdeasForm()
+    if form.validate_on_submit():
+        topic = form.topic.data
+        additional_instructions = form.additional_instructions.data
+        
+        example_json = {
+            "topics": [
+                {
+                    "unique_semantically_related_topic": "Example topic",
+                    "variations": [
+                        {
+                            "variation": "variation of example topic 1",
+                            "clickbait_title": "title for variation of example topic 1"
+                        },
+                        {
+                            "variation": "variation of example topic 2",
+                            "clickbait_title": "title for variation of example topic 2"
+                        },
+                        {
+                            "variation": "variation of example topic 3",
+                            "clickbait_title": "title for variation of example topic 3"
+                        },
+                        {
+                            "variation": "variation of example topic 4",
+                            "clickbait_title": "title for variation of example topic 4"
+                        },
+                    ]
+                }
+            ]
+        }
+
+        prompt = f'give me 10 semantically relevant but unique topics under the main category of {topic}, and for each, give me 10 different variations of the topic that each address a different search intent. Make it in table format with the following columns: column 1: The unique semantically related topic, column the different variations on it, column 3: an intriguing, clickbait style title.\n\nAdditional instructions: {additional_instructions}'
+        client = OpenAI()
+        openai_response = client.chat.completions.create(
+            model='gpt-4o-mini',
+            response_format={"type":"json_object"},
+            messages=[
+                {"role":"system","content":"Provide output in valid JSON. The data schema should be like this: "+json.dumps(example_json)},
+                {"role":"user","content":prompt}
+            ]
+        )
+
+        topics = openai_response.choices[0].message.content
+        cost = openai_api_calculate_cost(openai_response.usage)
+        generated_topics = json.loads(topics)
+
+        api_name = "OpenAI"
+        api_used = APIUsed.query.filter_by(name=api_name).first()
+        if not api_used:
+            api_used = APIUsed(name=api_name)
+            db.session.add(api_used)
+            db.session.commit()
+
+        cost_record = APICostRecord(cost=cost, api_used_name=api_used.name)
+        db.session.add(cost_record)
+        db.session.commit()
+        
+        return jsonify({'message': 'Topics generated', 'result': generated_topics}), 200
+    else:
+        print(form.errors)
+        return jsonify({'message': 'Error generating topics', 'errors': form.errors}), 500
+
 @seo.route('/get_all_api_usage_costs', methods=['GET'])
 @auth.login_required
 def get_all_api_usage_costs():
@@ -399,4 +465,27 @@ def delete_keyword_from_cluster():
         return jsonify({'message': 'Keyword deleted from cluster successfully'}), 200
     else:
         return jsonify({'message': 'Error deleting keyword from cluster', 'errors': form.errors}), 400
+
+
+@seo.route('/update_keyword_cluster_name', methods=['PUT'])
+@auth.login_required
+def update_keyword_cluster_name():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+    form = UpdateKeywordClusterNameForm()
+
+    if form.validate_on_submit():
+        cluster_id = form.keyword_cluster_id.data
+        new_name = form.keyword_cluster_name.data
+
+        cluster = KeywordCluster.query.filter_by(id=cluster_id, profile_id=user_profile.id).first()
+
+        if not cluster:
+            return jsonify({'message': 'Keyword cluster not found'}), 404
+
+        cluster.name = new_name
+        db.session.commit()
+
+        return jsonify({'message': 'Keyword cluster name updated successfully'}), 200
+    else:
+        return jsonify({'message': 'Error updating keyword cluster name', 'errors': form.errors}), 400
 
