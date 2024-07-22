@@ -12,7 +12,7 @@
             <LoadingTable />
         </div>
 
-        <div v-if="ideas.length > 0" class="mt-8">
+        <div v-if="Object.keys(ideas).length > 0" class="mt-8">
             <Table class="mt-3 w-full">
                 <TableHeader>
                     <TableRow>
@@ -22,10 +22,10 @@
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <template v-for="(idea, index) in ideas" :key="index">
+                    <template v-for="(idea, topic) in ideas" :key="topic">
                         <TableRow>
                             <TableCell :rowspan="idea.variations.length" class="text-sm font-medium">
-                                {{ idea.unique_semantically_related_topic }}
+                                {{ topic }}
                             </TableCell>
                             <TableCell class="text-sm">{{ idea.variations[0].variation }}</TableCell>
                             <TableCell class="text-sm">{{ idea.variations[0].clickbait_title }}</TableCell>
@@ -45,7 +45,7 @@
 import { ref } from 'vue';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import axios from 'axios';
+import jsonAutocomplete from 'json-autocomplete';
 
 import LoadingTable from '@/components/LoadingTable.vue';
 import {
@@ -59,40 +59,69 @@ import {
 
 const topic = ref('');
 const additionalInstructions = ref('');
-const ideas = ref([]);
+const ideas = ref({});
 const isLoading = ref(false);
 
 const generateIdeas = async () => {
     isLoading.value = true;
     const token = localStorage.getItem('token');
+
+    console.log('Starting to generate ideas...');
+    console.log('Topic:', topic.value);
+    console.log('Additional Instructions:', additionalInstructions.value);
+
     try {
-        const response = await axios.post(
-            'http://127.0.0.1:5000/api/generate_content_ideas',
-            {
+        const response = await fetch('http://127.0.0.1:5000/api/generate_content_ideas', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
                 topic: topic.value,
                 additional_instructions: additionalInstructions.value,
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-            }
-        );
+            }),
+        });
 
-        if (response.data && response.data.result) {
-            ideas.value = response.data.result.topics.map(topic => ({
-                unique_semantically_related_topic: topic.unique_semantically_related_topic,
-                variations: topic.variations.map(variation => ({
-                    variation: variation.variation,
-                    clickbait_title: variation.clickbait_title
-                }))
-            }));
+        console.log('Response received:', response);
+
+        if (!response.body) {
+            throw new Error('ReadableStream not yet supported in this browser.');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let jsonResponse = '';
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            jsonResponse += decoder.decode(value, { stream: true });
+
+            //console.log('Received chunk:', decoder.decode(value));
+            //console.log('Current JSON Response:', jsonResponse);
+
+            try {
+                const completeJsonString = jsonAutocomplete(jsonResponse);
+                let parsedJson = completeJsonString;
+
+                parsedJson = parsedJson.replace(/json/g, '');
+                parsedJson = parsedJson.replace('```', '');
+
+                parsedJson = JSON.parse(parsedJson);
+
+                console.log(parsedJson);
+
+
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+            }
         }
     } catch (error) {
-        console.error('Error generating keywords:', error);
+        console.error('Error fetching ideas:', error);
     } finally {
         isLoading.value = false;
+        console.log('Finished generating ideas.');
     }
-}
+};
 </script>

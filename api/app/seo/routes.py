@@ -2,7 +2,7 @@ import os
 import json
 import openai
 from openai import OpenAI
-from flask import request, jsonify
+from flask import request, jsonify, Response
 from flask_httpauth import HTTPTokenAuth
 from ..extensions import db
 from ..security.models import Profile, User, Token
@@ -206,7 +206,7 @@ def generate_content_ideas_view():
     if form.validate_on_submit():
         topic = form.topic.data
         additional_instructions = form.additional_instructions.data
-        
+
         example_json = {
             "topics": [
                 {
@@ -233,23 +233,37 @@ def generate_content_ideas_view():
             ]
         }
 
-        prompt = f'give me 10 semantically relevant but unique topics under the main category of {topic}, and for each, give me 10 different variations of the topic that each address a different search intent. Make it in table format with the following columns: column 1: The unique semantically related topic, column the different variations on it, column 3: an intriguing, clickbait style title.\n\nAdditional instructions: {additional_instructions}'
-        client = OpenAI()
-        openai_response = client.chat.completions.create(
-            model='gpt-4o-mini',
-            response_format={"type":"json_object"},
-            messages=[
-                {"role":"system","content":"Provide output in valid JSON. The data schema should be like this: "+json.dumps(example_json)},
-                {"role":"user","content":prompt}
-            ]
+        prompt = (
+            f"give me 10 semantically relevant but unique topics under the main category of {topic}, "
+            f"and for each, give me 10 different variations of the topic that each address a different search intent. "
+            f"Make it in table format with the following columns: column 1: The unique semantically related topic, "
+            f"column 2: the different variations on it, column 3: an intriguing, clickbait style title.\n\n"
+            f"Additional instructions: {additional_instructions}"
         )
 
-        topics = openai_response.choices[0].message.content
-        cost = openai_api_calculate_cost(openai_response.usage)
-        generated_topics = json.loads(topics)
+        stream = None
+
+        def generate():
+            client = OpenAI()
+            stream = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "Provide output in valid JSON. The data schema should be like this: " + json.dumps(example_json)},
+                    {"role": "user", "content": prompt}
+                ],
+                stream=True
+            )
+
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    yield(chunk.choices[0].delta.content)
+
+        #cost = openai_api_calculate_cost(stream.usage)
+        cost = 0
 
         api_name = "OpenAI"
         api_used = APIUsed.query.filter_by(name=api_name).first()
+
         if not api_used:
             api_used = APIUsed(name=api_name)
             db.session.add(api_used)
@@ -258,11 +272,12 @@ def generate_content_ideas_view():
         cost_record = APICostRecord(cost=cost, api_used_name=api_used.name)
         db.session.add(cost_record)
         db.session.commit()
-        
-        return jsonify({'message': 'Topics generated', 'result': generated_topics}), 200
+
+        return Response(generate(), content_type='application/json')
     else:
         print(form.errors)
         return jsonify({'message': 'Error generating topics', 'errors': form.errors}), 500
+
 
 @seo.route('/get_all_api_usage_costs', methods=['GET'])
 @auth.login_required
