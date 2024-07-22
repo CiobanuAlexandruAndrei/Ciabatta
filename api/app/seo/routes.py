@@ -241,7 +241,7 @@ def generate_content_ideas_view():
             f"Additional instructions: {additional_instructions}"
         )
 
-        stream = None
+        usage_data = None
 
         def generate():
             client = OpenAI()
@@ -251,27 +251,37 @@ def generate_content_ideas_view():
                     {"role": "system", "content": "Provide output in valid JSON. The data schema should be like this: " + json.dumps(example_json)},
                     {"role": "user", "content": prompt}
                 ],
-                stream=True
+                stream=True,
+                stream_options={
+                    "include_usage": True
+                }
             )
 
             for chunk in stream:
-                if chunk.choices[0].delta.content is not None:
-                    yield(chunk.choices[0].delta.content)
+                if hasattr(chunk, 'usage') and chunk.usage:
+                    print(chunk.usage)
+                    usage_data = chunk.usage
+                
+                # Check for the choices list and its content
+                if hasattr(chunk, 'choices') and len(chunk.choices) > 0:
+                    if hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'content'):
+                        if chunk.choices[0].delta.content is not None:
+                            yield chunk.choices[0].delta.content
 
-        #cost = openai_api_calculate_cost(stream.usage)
-        cost = 0
+        if usage_data:
+            cost = openai_api_calculate_cost(usage_data)
 
-        api_name = "OpenAI"
-        api_used = APIUsed.query.filter_by(name=api_name).first()
+            api_name = "OpenAI"
+            api_used = APIUsed.query.filter_by(name=api_name).first()
 
-        if not api_used:
-            api_used = APIUsed(name=api_name)
-            db.session.add(api_used)
+            if not api_used:
+                api_used = APIUsed(name=api_name)
+                db.session.add(api_used)
+                db.session.commit()
+
+            cost_record = APICostRecord(cost=cost, api_used_name=api_used.name)
+            db.session.add(cost_record)
             db.session.commit()
-
-        cost_record = APICostRecord(cost=cost, api_used_name=api_used.name)
-        db.session.add(cost_record)
-        db.session.commit()
 
         return Response(generate(), content_type='application/json')
     else:
@@ -312,11 +322,13 @@ def get_api_usage_costs():
                     'timestamp': record.timestamp
                 })
 
-        # Convert to DataFrame for easier manipulation
         df = pd.DataFrame(data)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
 
-        # Initialize an empty DataFrame for grouped data
+        if 'timestamp' in df.columns:
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+        else:
+            return jsonify({'message': 'Timestamp column not found in DataFrame'}), 400
+
         df_grouped = pd.DataFrame()
 
         if period == 'week':
@@ -340,7 +352,7 @@ def get_api_usage_costs():
         else:
             return jsonify({'message': 'Invalid period specified'}), 400
 
-        # Prepare the response data
+
         response_data = {}
         if period == 'year':
             df_grouped['period'] = df_grouped['month'].astype(str)
@@ -352,7 +364,7 @@ def get_api_usage_costs():
             response_data[api_name] = {
                 'costs': api_data['cost'].tolist(),
                 'periods': api_data['period'].tolist(),
-                'call_counts': api_data['timestamp'].tolist()  # This line adds the call count
+                'call_counts': api_data['timestamp'].tolist()  
             }
 
         return jsonify({'message': 'API cost data retrieved successfully', 'data': response_data}), 200

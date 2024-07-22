@@ -1,5 +1,5 @@
 <template>
-    <div class="mt-12 mb-3">
+    <div class="mt-12 mb-3 relative">
         <div class="flex flex-wrap gap-3 w-full mb-12">
             <Input v-model="topic" type="text" placeholder="Keyword or Topic" class="w-[300px]" />
             <Input v-model="additionalInstructions" placeholder="Additional Instructions" class="w-full" />
@@ -8,11 +8,7 @@
             </Button>
         </div>
 
-        <div v-if="isLoading">
-            <LoadingTable />
-        </div>
-
-        <div v-if="Object.keys(ideas).length > 0" class="mt-8">
+        <div class="mt-8">
             <Table class="mt-3 w-full">
                 <TableHeader>
                     <TableRow>
@@ -22,17 +18,17 @@
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <template v-for="(idea, topic) in ideas" :key="topic">
-                        <TableRow>
-                            <TableCell :rowspan="idea.variations.length" class="text-sm font-medium">
-                                {{ topic }}
+                    <template v-for="(topic, topicIndex) in ideas.topics" :key="topicIndex">
+                        <TableRow v-if="topic.unique_semantically_related_topic">
+                            <TableCell :rowspan="topic.variations.length" class="text-sm font-medium">
+                                {{ topic.unique_semantically_related_topic }}
                             </TableCell>
-                            <TableCell class="text-sm">{{ idea.variations[0].variation }}</TableCell>
-                            <TableCell class="text-sm">{{ idea.variations[0].clickbait_title }}</TableCell>
+                            <TableCell v-if="topic.variations[0]?.variation" class="text-sm">{{ topic.variations[0].variation }}</TableCell>
+                            <TableCell v-if="topic.variations[0]?.clickbait_title" class="text-sm">{{ topic.variations[0].clickbait_title }}</TableCell>
                         </TableRow>
-                        <TableRow v-for="(variation, varIndex) in idea.variations.slice(1)" :key="varIndex">
-                            <TableCell class="text-sm">{{ variation.variation }}</TableCell>
-                            <TableCell class="text-sm">{{ variation.clickbait_title }}</TableCell>
+                        <TableRow v-for="(variation, varIndex) in topic.variations.slice(1)" :key="varIndex">
+                            <TableCell v-if="variation.variation" class="text-sm">{{ variation.variation }}</TableCell>
+                            <TableCell v-if="variation.clickbait_title" class="text-sm">{{ variation.clickbait_title }}</TableCell>
                         </TableRow>
                     </template>
                 </TableBody>
@@ -59,11 +55,9 @@ import {
 
 const topic = ref('');
 const additionalInstructions = ref('');
-const ideas = ref({});
-const isLoading = ref(false);
+const ideas = ref({ topics: [] });
 
 const generateIdeas = async () => {
-    isLoading.value = true;
     const token = localStorage.getItem('token');
 
     console.log('Starting to generate ideas...');
@@ -98,9 +92,6 @@ const generateIdeas = async () => {
             if (done) break;
             jsonResponse += decoder.decode(value, { stream: true });
 
-            //console.log('Received chunk:', decoder.decode(value));
-            //console.log('Current JSON Response:', jsonResponse);
-
             try {
                 const completeJsonString = jsonAutocomplete(jsonResponse);
                 let parsedJson = completeJsonString;
@@ -108,19 +99,17 @@ const generateIdeas = async () => {
                 parsedJson = parsedJson.replace(/json/g, '');
                 parsedJson = parsedJson.replace('```', '');
 
+            
                 parsedJson = JSON.parse(parsedJson);
-
+                ideas.value = parsedJson;
                 console.log(parsedJson);
-
-
             } catch (error) {
-                console.error('Error parsing JSON:', error);
+                //console.error('Error parsing JSON:', error);
             }
         }
     } catch (error) {
         console.error('Error fetching ideas:', error);
     } finally {
-        isLoading.value = false;
         console.log('Finished generating ideas.');
     }
 };
