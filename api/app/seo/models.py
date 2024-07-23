@@ -1,6 +1,15 @@
 from datetime import datetime
 from ..extensions import db
 
+class ContentIdea(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    topic_variation = db.Column(db.String(200), nullable=False)
+    topic_category = db.Column(db.String(200), nullable=False)
+    added = db.Column(db.DateTime, default=datetime.utcnow)
+    profile_id = db.Column(db.Integer, db.ForeignKey('profile.id'), nullable=False)
+    profile = db.relationship('Profile', backref=db.backref('content_ideas', lazy=True))
+
 class KeywordData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)

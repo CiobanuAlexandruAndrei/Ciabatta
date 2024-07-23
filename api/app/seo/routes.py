@@ -515,3 +515,89 @@ def update_keyword_cluster_name():
     else:
         return jsonify({'message': 'Error updating keyword cluster name', 'errors': form.errors}), 400
 
+@seo.route('/check_content_idea', methods=['POST'])
+@auth.login_required
+def check_content_idea():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+
+    form = ContentIdeaCreationForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        topic_variation = form.topic_variation.data
+        topic_category = form.topic_category.data
+
+        content_idea = ContentIdea.query.filter_by(
+            title=title,
+            topic_variation=topic_variation,
+            topic_category=topic_category,
+            profile_id=user_profile.id
+        ).first()
+
+        if content_idea:
+            return jsonify({'is_saved': True})
+        else:
+            return jsonify({'is_saved': False})
+    else:
+        print(form.errors)
+        return jsonify({'message': 'Error checking content idea', 'errors': form.errors}), 400
+
+@seo.route('/create_content_idea', methods=['POST'])
+@auth.login_required
+def create_content_idea():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+    form = ContentIdeaCreationForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        topic_variation = form.topic_variation.data
+        topic_category = form.topic_category.data
+        profile_id = user_profile.id
+
+        # Check if the content idea already exists before adding
+        existing_idea = ContentIdea.query.filter_by(title=title, topic_variation=topic_variation, topic_category=topic_category, profile_id=profile_id).first()
+        if existing_idea:
+            return jsonify({'message': 'Content idea already exists'}), 400
+
+        new_content_idea = ContentIdea(
+            title=title,
+            topic_variation=topic_variation,
+            topic_category=topic_category,
+            profile_id=profile_id
+        )
+
+        db.session.add(new_content_idea)
+        db.session.commit()
+
+        return jsonify({'message': 'Content idea created successfully'}), 201
+    else:
+        print(form.errors)
+        return jsonify({'message': 'Error creating content idea', 'errors': form.errors}), 400
+    
+
+@seo.route('/delete_content_idea', methods=['DELETE'])
+@auth.login_required
+def delete_content_idea():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+    form = ContentIdeaDeletionForm()
+
+    if form.validate_on_submit():
+        idea_id = form.id.data
+        content_idea = ContentIdea.query.filter_by(id=idea_id, profile_id=user_profile.id).first()
+        if not content_idea:
+            return jsonify({'message': 'Content idea not found'}), 404
+
+        db.session.delete(content_idea)
+        db.session.commit()
+
+        return jsonify({'message': 'Content idea deleted successfully'}), 200
+    else:
+        return jsonify({'message': 'Error deleting content idea', 'errors': form.errors}), 400
+    
+
+@seo.route('/get_content_ideas', methods=['GET'])
+@auth.login_required
+def get_content_ideas():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+    content_ideas = ContentIdea.query.filter_by(profile_id=user_profile.id).all()
+    schema = ContentIdeaSchema(many=True)
+    content_ideas_data = schema.dump(content_ideas)
+    return jsonify({'message': 'Content ideas retrieved successfully', 'result': content_ideas_data}), 200

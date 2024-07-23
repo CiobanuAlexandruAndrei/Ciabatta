@@ -37,3 +37,12 @@ class PeriodForm(FlaskForm):
 class UpdateKeywordClusterNameForm(FlaskForm):
     keyword_cluster_id = IntegerField('keyword_cluster_id', validators=[DataRequired()])
     keyword_cluster_name = StringField('keyword_cluster_name', validators=[DataRequired()])
+
+
+class ContentIdeaCreationForm(FlaskForm):
+    title = StringField('title', validators=[DataRequired()])
+    topic_variation = StringField('topic_variation', validators=[DataRequired()])
+    topic_category = StringField('topic_category', validators=[DataRequired()])
+
+class ContentIdeaDeletionForm(FlaskForm):
+    id = IntegerField('keyword_cluster_id', validators=[DataRequired()])

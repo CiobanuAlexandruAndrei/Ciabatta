@@ -40,7 +40,7 @@
 import { ref } from 'vue'
 import Sidebar from '@/components/Sidebar.vue'
 import ContentIdeas from '@/components/ContentIdeas.vue'
-
+import { Button } from '@/components/ui/button'
 
 import {
     Tabs,
