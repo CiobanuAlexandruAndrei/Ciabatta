@@ -51,6 +51,7 @@ import {
 import { Button } from '@/components/ui/button'
 import KeywordDataTable from '@/components/KeywordDataTable.vue'
 import LoadingTable from '@/components/LoadingTable.vue'
+import KeywordLookupInfo from '@/components/KeywordLookupInfo.vue'
 
 const keywordsStore = useKeywordsStore();
 

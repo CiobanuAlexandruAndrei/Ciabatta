@@ -45,6 +45,7 @@ import seoIcon from '@/assets/img/seo_icon.png'
 import settingsIcon from '@/assets/img/settings_icon.png'
 import calendarIcon from '@/assets/img/calendar_icon.png'
 import wordpressIcon from '@/assets/img/wordpress_icon.png'
+import companyIcon from '@/assets/img/company_icon.png'
 
 interface MenuItem {
   label: string
@@ -55,10 +56,11 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   { label: 'Dashboard', route: '/', icon: dashboardIcon },
   { label: 'Keywords', route: '/keywords', icon: keywordsIcon },
-  { label: 'Content Generation', route: '/content-generation', icon: contentIcon },
+  { label: 'Content', route: '/content-generation', icon: contentIcon },
   { label: 'Blog Posts', route: '/keywords', icon: wordpressIcon },
   { label: 'SEO Heist', route: '/keywords', icon: seoIcon },
   { label: 'Calendar', route: '/keywords', icon: calendarIcon },
+  { label: 'Company', route: '/keywords', icon: companyIcon },
   { label: 'Settings', route: '/keywords', icon: settingsIcon },
 
 ]

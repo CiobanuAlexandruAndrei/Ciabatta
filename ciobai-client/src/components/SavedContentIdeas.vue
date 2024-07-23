@@ -78,7 +78,8 @@
                     <TableCell class="text-sm max-w-[700px]">{{ idea.title }}</TableCell>
                     <TableCell class="text-sm">{{ idea.topic_variation }}</TableCell>
                     <TableCell class="text-sm">{{ idea.topic_category }}</TableCell>
-                    <TableCell class="text-sm text-right">
+                    <TableCell class="text-sm flex gap-2 min-w-[150px]">
+                        <Button> <img src="@/assets/img/next_icon.png" class="h-full" /> </Button>
                         <AlertDialog>
                             <AlertDialogTrigger as-child>
                                 <Button variant="destructive" @click="() => confirmDeleteIdea(idea.id)">
@@ -98,6 +99,7 @@
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
+                        
                     </TableCell>
                 </TableRow>
             </TableBody>
@@ -166,7 +168,7 @@ const toggleSelectAll = () => {
     if (allSelected.value) {
         selectedIdeas.value = [];
     } else {
-        selectedIdeas.value = contentIdeas.value.map(idea => idea.id);
+        selectedIdeas.value = filteredContentIdeas.value.map(idea => idea.id);
     }
 };
 
