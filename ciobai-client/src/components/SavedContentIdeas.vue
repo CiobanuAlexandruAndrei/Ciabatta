@@ -31,7 +31,33 @@
             </AlertDialog>
         </div>
         <div v-else class="h-[60px]"></div> <!-- The table doesn't move when selecting ideas -->
-        <Table class="my-3">
+        <div class="flex justify-between items-center mb-4">
+            <div class="relative w-full max-w-sm items-center">
+                <Input
+                    id="search"
+                    type="text"
+                    v-model="searchTerm"
+                    placeholder="Search saved content ideas..."
+                    autocomplete="off"
+                    class="pl-10"
+                />
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                    <img src="@/assets/img/search_icon.png" class="h-6 w-6 text-muted-foreground opacity-60" />
+                </span>
+            </div>
+            <div class="mr-4 text-sm text-gray-600 flex gap-4">
+                <div v-if="selectedIdeas.length > 0">
+                    Selected: {{ selectedIdeas.length }} 
+                </div>
+
+                <div>
+                    Results: {{ filteredContentIdeas.length }}
+                </div>
+
+            </div>
+        </div>
+
+        <Table class="my-3 w-full">
             <TableHeader>
                 <TableRow>
                     <TableCell>
@@ -44,7 +70,7 @@
                 </TableRow>
             </TableHeader>
             <TableBody>
-                <TableRow v-for="idea in contentIdeas" :key="idea.id">
+                <TableRow v-for="idea in filteredContentIdeas" :key="idea.id">
                     <TableCell class="text-sm max-w-[400px]">
                         <Checkbox :id="`idea-${idea.id}`" :checked="selectedIdeas.includes(idea.id)"
                             @click="() => toggleSelection(idea.id)" />
@@ -76,6 +102,9 @@
                 </TableRow>
             </TableBody>
         </Table>
+        <div v-if="filteredContentIdeas.length == 0" class="py-4 text-center w-full text-sm">
+            No results found
+        </div>
     </div>
 </template>
 
@@ -84,6 +113,7 @@ import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -106,6 +136,7 @@ import {
 
 const contentIdeas = ref([]);
 const selectedIdeas = ref([]);
+const searchTerm = ref("");
 const ideaToDelete = ref(null);
 
 const fetchContentIdeas = async () => {
@@ -143,6 +174,17 @@ const allSelected = computed(() => {
     return selectedIdeas.value.length === contentIdeas.value.length;
 });
 
+const filteredContentIdeas = computed(() => {
+    if (!searchTerm.value) {
+        return contentIdeas.value;
+    }
+    return contentIdeas.value.filter(idea => 
+        idea.title.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
+        idea.topic_variation.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
+        idea.topic_category.toLowerCase().includes(searchTerm.value.toLowerCase())
+    );
+});
+
 const deleteSelectedIdeas = async () => {
     try {
         const token = localStorage.getItem("token");
@@ -155,7 +197,7 @@ const deleteSelectedIdeas = async () => {
             });
         }
         fetchContentIdeas();
-        selectedIdeas.value = []; 
+        selectedIdeas.value = [];
     } catch (error) {
         console.error("Error deleting content ideas:", error);
     }
@@ -174,8 +216,8 @@ const deleteIdea = async () => {
             },
             data: { id: ideaToDelete.value }
         });
-        fetchContentIdeas(); 
-        ideaToDelete.value = null; 
+        fetchContentIdeas();
+        ideaToDelete.value = null;
     } catch (error) {
         console.error("Error deleting content idea:", error);
     }
