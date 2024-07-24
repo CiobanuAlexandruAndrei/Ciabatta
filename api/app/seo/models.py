@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from ..extensions import db
 
@@ -6,9 +7,39 @@ class ContentIdea(db.Model):
     title = db.Column(db.String(200), nullable=False)
     topic_variation = db.Column(db.String(200), nullable=False)
     topic_category = db.Column(db.String(200), nullable=False)
+
     added = db.Column(db.DateTime, default=datetime.utcnow)
+
     profile_id = db.Column(db.Integer, db.ForeignKey('profile.id'), nullable=False)
     profile = db.relationship('Profile', backref=db.backref('content_ideas', lazy=True))
+
+
+class ContentOutline(db.Model):
+    id = db.Column(db.String(36), primary_key=True, unique=True, nullable=False, default=uuid.uuid4().hex)
+    title = db.Column(db.String(200), nullable=False)
+    target_audience = db.Column(db.String(200), nullable=False)
+    wrote_as = db.Column(db.String(200), nullable=False)
+    additional_info = db.Column(db.Text, nullable=True)
+    content = db.Column(db.Text, nullable=False)
+
+class ContentOutlineTaskStatus(db.Model):
+    name = db.Column(db.String(200), primary_key=True, nullable=False)
+
+class ContentOutlineTask(db.Model):
+    id = db.Column(db.String(36), primary_key=True, unique=True, nullable=False, default=uuid.uuid4().hex)
+    content_outline_task_status = db.Column(db.String(200), nullable=False)
+
+    added = db.Column(db.DateTime, default=datetime.utcnow)
+
+    content_outline_id = db.Column(db.String(36), db.ForeignKey('content_outline.id'), nullable=False)
+    content_outline = db.relationship('ContentOutline', backref=db.backref('content_outline_tasks', lazy=True))
+
+    profile_id = db.Column(db.Integer, db.ForeignKey('profile.id'), nullable=False)
+    profile = db.relationship('Profile', backref=db.backref('content_outline_tasks', lazy=True))
+
+    task_status_name = db.Column(db.String(200), db.ForeignKey('content_outline_task_status.name'), nullable=False)
+    task_status = db.relationship('ContentOutlineTaskStatus', backref=db.backref('content_outline_tasks', lazy=True))
+
 
 class KeywordData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -45,3 +76,6 @@ keyword_cluster_keywords = db.Table('keyword_cluster_keywords',
     db.Column('keyword_cluster_id', db.Integer, db.ForeignKey('keyword_cluster.id'), primary_key=True),
     db.Column('keyword_name', db.String(200), db.ForeignKey('keyword.name'), primary_key=True)
 )
+
+
+

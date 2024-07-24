@@ -601,3 +601,22 @@ def get_content_ideas():
     schema = ContentIdeaSchema(many=True)
     content_ideas_data = schema.dump(content_ideas)
     return jsonify({'message': 'Content ideas retrieved successfully', 'result': content_ideas_data}), 200
+
+
+@seo.route('/create_content_outline_task', methods=['POST'])
+@auth.login_required
+def create_content_outline_task():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+    form = GenerateContentOutlineForm()
+
+    if form.validate_on_submit():
+        title = form.title.data
+        target_audience = form.target_audience.data
+        wrote_as = form.wrote_as.data
+        additional_info = form.additional_info.data
+        content_idea_id = form.content_idea_id.data
+        delete_content_idea = form.delete_content_idea.data
+
+    else:
+        print(form.errors)
+        return jsonify({'message': 'Error creating content outline task', 'errors': form.errors}), 400

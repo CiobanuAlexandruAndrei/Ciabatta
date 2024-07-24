@@ -46,6 +46,7 @@ import settingsIcon from '@/assets/img/settings_icon.png'
 import calendarIcon from '@/assets/img/calendar_icon.png'
 import wordpressIcon from '@/assets/img/wordpress_icon.png'
 import companyIcon from '@/assets/img/company_icon.png'
+import newsIcon from '@/assets/img/news_icon.png';
 
 interface MenuItem {
   label: string
@@ -60,6 +61,7 @@ const menuItems: MenuItem[] = [
   { label: 'Blog Posts', route: '/keywords', icon: wordpressIcon },
   { label: 'SEO Heist', route: '/keywords', icon: seoIcon },
   { label: 'Calendar', route: '/keywords', icon: calendarIcon },
+  { label: 'News', route: '/keywords', icon: newsIcon },
   { label: 'Company', route: '/keywords', icon: companyIcon },
   { label: 'Settings', route: '/keywords', icon: settingsIcon },
 

@@ -3,7 +3,6 @@ from .config import Config
 from .extensions import db, migrate, cors, ma
 from flask_wtf.csrf import CSRFProtect
 
-# csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
@@ -14,7 +13,7 @@ def create_app():
     migrate.init_app(app, db)
     cors.init_app(app, resources={r"/*": {"origins": "*"}})
     ma.init_app(app) 
-    # csrf.init_app(app)
+
     with app.app_context():
         from .security import security as security_blueprint
         from .seo import seo as seo_blueprint

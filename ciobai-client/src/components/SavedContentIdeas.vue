@@ -79,7 +79,7 @@
                     <TableCell class="text-sm">{{ idea.topic_variation }}</TableCell>
                     <TableCell class="text-sm">{{ idea.topic_category }}</TableCell>
                     <TableCell class="text-sm flex gap-2 min-w-[150px]">
-                        <Button> <img src="@/assets/img/next_icon.png" class="h-full" /> </Button>
+                        <GenerateOutlinesBtn :importedPostTitle="idea.title" :contentIdeaId="idea.id" />
                         <AlertDialog>
                             <AlertDialogTrigger as-child>
                                 <Button variant="destructive" @click="() => confirmDeleteIdea(idea.id)">
@@ -135,6 +135,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+
+import GenerateOutlinesBtn from '@/components/GenerateOutlinesBtn.vue'
 
 const contentIdeas = ref([]);
 const selectedIdeas = ref([]);

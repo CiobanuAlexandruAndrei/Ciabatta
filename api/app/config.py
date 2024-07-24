@@ -6,7 +6,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 class Config:
     DEBUG = True
 
-
     WTF_CSRF_ENABLED = False 
 
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + str(BASE_DIR / 'db.sqlite3')

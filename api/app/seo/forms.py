@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField
+from wtforms import StringField, IntegerField, BooleanField
 from wtforms.validators import DataRequired, Optional
 
 
@@ -44,5 +44,15 @@ class ContentIdeaCreationForm(FlaskForm):
     topic_variation = StringField('topic_variation', validators=[DataRequired()])
     topic_category = StringField('topic_category', validators=[DataRequired()])
 
+
 class ContentIdeaDeletionForm(FlaskForm):
     id = IntegerField('keyword_cluster_id', validators=[DataRequired()])
+
+
+class GenerateContentOutlineForm(FlaskForm):
+    title = StringField('title', validators=[DataRequired()])
+    target_audience = StringField('target_audience', validators=[Optional()])
+    wrote_as = StringField('wrote_as', validators=[Optional()])
+    additional_info = StringField('additional_info', validators=[Optional()])
+    content_idea_id = IntegerField('content_idea_id', validators=[DataRequired()])
+    delete_content_idea = BooleanField('delete_content_idea', validators=[DataRequired()])
