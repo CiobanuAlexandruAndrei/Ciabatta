@@ -55,4 +55,4 @@ class GenerateContentOutlineForm(FlaskForm):
     wrote_as = StringField('wrote_as', validators=[Optional()])
     additional_info = StringField('additional_info', validators=[Optional()])
     content_idea_id = IntegerField('content_idea_id', validators=[DataRequired()])
-    delete_content_idea = BooleanField('delete_content_idea', validators=[DataRequired()])
+    delete_content_idea = BooleanField('delete_content_idea', validators=[Optional()])

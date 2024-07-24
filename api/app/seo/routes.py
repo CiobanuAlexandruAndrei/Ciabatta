@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 import pandas as pd
 from . import seo  
 from datetime import datetime, timedelta
+#from .tasks import hello_celery
 
 load_dotenv()
 
@@ -610,6 +611,8 @@ def create_content_outline_task():
     form = GenerateContentOutlineForm()
 
     if form.validate_on_submit():
+        from ..tasks import hello_celery
+
         title = form.title.data
         target_audience = form.target_audience.data
         wrote_as = form.wrote_as.data
@@ -617,6 +620,8 @@ def create_content_outline_task():
         content_idea_id = form.content_idea_id.data
         delete_content_idea = form.delete_content_idea.data
 
+        hello_celery.delay()
+        return jsonify({'message': 'Success!', 'result': 'Good result'}), 200
     else:
         print(form.errors)
         return jsonify({'message': 'Error creating content outline task', 'errors': form.errors}), 400
