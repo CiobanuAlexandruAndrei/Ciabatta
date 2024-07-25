@@ -20,7 +20,7 @@ class ContentOutline(db.Model):
     target_audience = db.Column(db.String(200), nullable=False)
     wrote_as = db.Column(db.String(200), nullable=False)
     additional_info = db.Column(db.Text, nullable=True)
-    content = db.Column(db.Text, nullable=False)
+    content = db.Column(db.JSON, nullable=True)
 
 class ContentOutlineTaskStatus(db.Model):
     name = db.Column(db.String(200), primary_key=True, nullable=False)

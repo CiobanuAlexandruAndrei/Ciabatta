@@ -13,14 +13,14 @@
             <Input v-model="postTitle" class="mt-2" placeholder="Post Title" />
 
             <div class="flex gap-2">
-                <Input v-model="targetAudience" class="" placeholder="Target Audience" />
+                <Input v-model="targetAudience" class="" placeholder="Target Audience (leave blank for automatic)" />
                 <Button variant="outline">
                     <img src="@/assets/img/ai_icon.png" class="h-full opacity-60" />
                 </Button>
             </div>
 
             <div class="flex gap-2">
-                <Input v-model="wroteAs" class="" placeholder="Wrote As" />
+                <Input v-model="wroteAs" class="" placeholder="Wrote As (leave blank for automatic)" />
                 <Button variant="outline">
                     <img src="@/assets/img/ai_icon.png" class="h-full opacity-60" />
                 </Button>

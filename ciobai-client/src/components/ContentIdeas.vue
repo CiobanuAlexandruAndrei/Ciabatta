@@ -167,7 +167,7 @@ const addKeyword = (keyword) => {
     closeCombobox();
     modelValue.value.push(keyword);
     searchTerm.value = '';
-    focusInput();
+
 };
 
 const addNewKeyword = () => {
@@ -175,7 +175,7 @@ const addNewKeyword = () => {
         modelValue.value.push(searchTerm.value);
         searchTerm.value = '';
         closeCombobox(); // Close combobox after adding a new keyword
-        focusInput();
+
     }
 };
 
@@ -183,12 +183,9 @@ const closeCombobox = () => {
     open.value = false;
 };
 
-const focusInput = () => {
-    tagsInput.value.focus();
-};
+
 
 onMounted(async () => {
     await fetchKeywordClusters();
-    focusInput();
 });
 </script>

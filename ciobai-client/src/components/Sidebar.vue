@@ -1,7 +1,7 @@
 <template>
   <div :class="['fixed top-0 left-0 flex flex-col h-full transition-width duration-300 border-r-2 border-black', isCollapsed ? 'w-20' : 'w-64']">
     <div class="flex items-center justify-between p-4 border-b">
-      <h1 class="text-xl font-bold" v-if="!isCollapsed">Tiseo</h1>
+      <h1 class="text-xl font-bold" v-if="!isCollapsed">Ciabatta</h1>
       <button @click="toggleCollapse" aria-label="Toggle Sidebar">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="isCollapsed ? 'M4 6h16M4 12h16M4 18h16' : 'M4 6h16M4 12h16M4 18h16'"/>

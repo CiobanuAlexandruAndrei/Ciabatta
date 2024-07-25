@@ -1,11 +1,13 @@
 import os
 import json
+import redis
 import openai
 from openai import OpenAI
 from flask import request, jsonify, Response, current_app, stream_with_context
 from flask_httpauth import HTTPTokenAuth
 from ..extensions import db
 from ..security.models import Profile, User, Token
+from ..config import Config
 from .models import *
 from .forms import *
 from .serializers import *
@@ -24,6 +26,9 @@ DATAFORSEO_USERNAME = os.getenv('DATAFORSEO_USERNAME')
 DATAFORSEO_PASSWORD = os.getenv('DATAFORSEO_PASSWORD')
 
 auth = HTTPTokenAuth(scheme='Bearer')
+
+redis_client = redis.StrictRedis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, db=Config.REDIS_DB, decode_responses=Config.REDIS_DECODE_RESPONSES)
+
 
 @auth.verify_token
 def verify_token(token):
@@ -252,6 +257,7 @@ def generate_content_ideas_view():
                     {"role": "system", "content": "Provide output in valid JSON. The data schema should be like this: " + json.dumps(example_json)},
                     {"role": "user", "content": prompt}
                 ],
+                response_format={"type":"json_object"},
                 stream=True,
                 stream_options={
                     "include_usage": True
@@ -604,24 +610,130 @@ def get_content_ideas():
     return jsonify({'message': 'Content ideas retrieved successfully', 'result': content_ideas_data}), 200
 
 
+# @seo.route('/create_content_outline_task', methods=['POST'])
+# @auth.login_required
+# def create_content_outline_task():
+#     user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+#     form = GenerateContentOutlineForm()
+
+#     if form.validate_on_submit():
+#         from ..tasks import hello_celery
+
+#         title = form.title.data
+#         target_audience = form.target_audience.data
+#         wrote_as = form.wrote_as.data
+#         additional_info = form.additional_info.data
+#         content_idea_id = form.content_idea_id.data
+#         delete_content_idea = form.delete_content_idea.data
+
+#         hello_celery.delay()
+#         return jsonify({'message': 'Success!', 'result': 'Good result'}), 200
+#     else:
+#         print(form.errors)
+#         return jsonify({'message': 'Error creating content outline task', 'errors': form.errors}), 400
+    
+
 @seo.route('/create_content_outline_task', methods=['POST'])
 @auth.login_required
 def create_content_outline_task():
+    from ..tasks import generate_content_outline_task
+
     user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
     form = GenerateContentOutlineForm()
 
     if form.validate_on_submit():
-        from ..tasks import hello_celery
-
         title = form.title.data
         target_audience = form.target_audience.data
         wrote_as = form.wrote_as.data
         additional_info = form.additional_info.data
         content_idea_id = form.content_idea_id.data
         delete_content_idea = form.delete_content_idea.data
+        additional_instructions = form.additional_info.data
 
-        hello_celery.delay()
-        return jsonify({'message': 'Success!', 'result': 'Good result'}), 200
+        content_outline = ContentOutline(
+            id=str(uuid.uuid4().hex),
+            title=title,
+            target_audience=target_audience,
+            wrote_as=wrote_as,
+            additional_info=additional_info,
+            content='' 
+        )
+        db.session.add(content_outline)
+        db.session.commit()
+
+        prompt = f"Guess by yourself missing fields except additional_info, Create an outline for a seo optimized blog article, generate url and metatags optimized for seo, title: {title}. Target audience: {target_audience}. Written as (example An expert in IoT security and smart city technologies): {wrote_as}. Additional info: {additional_info}. Instructions: {additional_instructions}"
+        example_json = {
+            'title': 'Example Title',
+            'target_audience': 'Example Audience',
+            'wrote_as': 'Example wrote as',
+            'additional_info': 'Example additional info',
+
+            'metatags': {
+                'url': '/example_url',
+                'page_title': 'Example Page Title',
+                'page_description': 'Example Page Description',
+            },
+
+            'content': '''Example content: 1. **Introduction** - Brief overview of IoT and its importance in today's digital landscape. - The increasing need for robust security frameworks. 2. **Understanding IoT Security Frameworks** - Definition and purpose of IoT security frameworks. - Key components of an effective framework''',
+        }
+
+        # Start the Celery task
+        task = generate_content_outline_task.apply_async(
+            args=[prompt, example_json, user_profile.id, content_outline.id]
+        )
+        return jsonify({'message': 'Task started', 'task_id': task.id}), 200
     else:
-        print(form.errors)
-        return jsonify({'message': 'Error creating content outline task', 'errors': form.errors}), 400
+        return jsonify({'message': 'Error creating content outline task', 'errors': form.errors}), 500
+    
+
+@seo.route('/get_all_content_outlines_tasks', methods=['GET'])
+@auth.login_required
+def get_all_content_outlines_tasks():
+    user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
+    content_outlines_tasks = ContentOutlineTask.query.filter_by(profile_id=user_profile.id).all()
+    schema = ContentOutlineTaskSchema(many=True)
+    content_outlines_tasks_data = schema.dump(content_outlines_tasks)
+    return jsonify({'message': 'Content outlines tasks retrieved successfully', 'result': content_outlines_tasks_data}), 200
+
+
+content_outline_schema = ContentOutlineSchema()
+
+@seo.route('/get_content_outline/<string:content_outline_task_id>', methods=['GET'])
+@auth.login_required
+def get_content_outline(content_outline_task_id):
+    # Retrieve ContentOutlineTask based on the task ID
+    content_outline_task = ContentOutlineTask.query.get(content_outline_task_id)
+    
+    if not content_outline_task:
+        return jsonify({'message': 'Content outline task not found'}), 404
+
+    # Retrieve the associated ContentOutline
+    content_outline = ContentOutline.query.get(content_outline_task.content_outline_id)
+    
+    if not content_outline:
+        return jsonify({'message': 'Content outline not found'}), 404
+
+    def generate_response():
+        initial_json = content_outline_schema.dump(content_outline)
+        
+        # Start the JSON object
+        yield '{'
+        yield f'"content_outline": {json.dumps(initial_json, indent=4)}, "content": "'
+        
+        redis_key = content_outline_task_id
+        is_first = True
+        while True:
+            data = redis_client.lpop(redis_key)
+            if data:
+                if not is_first:
+                    yield '\\n'  # Add a newline between chunks
+                yield data.replace('"', '\\"').replace('\n', '')  # Escape quotes and newlines for JSON string
+                is_first = False
+            else:
+                # Check the status of the task
+                task_status = ContentOutlineTask.query.get(content_outline_task_id).content_outline_task_status
+                if task_status == 'Completed':
+                    yield '"}'
+                    break
+
+    return Response(stream_with_context(generate_response()), content_type='application/json')

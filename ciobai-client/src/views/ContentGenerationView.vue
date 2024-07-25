@@ -26,7 +26,7 @@
                     <ContentIdeas />
                 </TabsContent>
                 <TabsContent value="outlines">
-                    Outlines
+                    <ContentOutlines />
                 </TabsContent>
                 <TabsContent value="creation">
                     Creation
@@ -40,6 +40,7 @@
 import { ref } from 'vue'
 import Sidebar from '@/components/Sidebar.vue'
 import ContentIdeas from '@/components/ContentIdeas.vue'
+import ContentOutlines from '@/components/ContentOutlines.vue'
 import { Button } from '@/components/ui/button'
 
 import {
