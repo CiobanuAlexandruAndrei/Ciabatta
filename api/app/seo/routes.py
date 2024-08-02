@@ -714,26 +714,39 @@ def get_content_outline(content_outline_task_id):
         return jsonify({'message': 'Content outline not found'}), 404
 
     def generate_response():
+        # Serialize the initial content outline
         initial_json = content_outline_schema.dump(content_outline)
         
+        # Initialize content field with pre-existing content
+        initial_content = initial_json.get('content', '')
+
+        # Create the response dictionary
+        response_dict = initial_json.copy()
+        response_dict['content'] = initial_content
+
         # Start the JSON object
         yield '{'
-        yield f'"content_outline": {json.dumps(initial_json, indent=4)}, "content": "'
+        yield f'"content_outline": {json.dumps(response_dict, indent=4)}'
         
         redis_key = content_outline_task_id
         is_first = True
+        
+        # Start appending to the content field inside content_outline
+        yield ', "content_outline": {'
+        yield f'"id": "{response_dict["id"]}", "title": "{response_dict["title"]}", "target_audience": "{response_dict["target_audience"]}", "wrote_as": "{response_dict["wrote_as"]}", "additional_info": "{response_dict["additional_info"]}", "content": "'
+
         while True:
             data = redis_client.lpop(redis_key)
             if data:
                 if not is_first:
                     yield '\\n'  # Add a newline between chunks
-                yield data.replace('"', '\\"').replace('\n', '')  # Escape quotes and newlines for JSON string
+                yield data.replace('"', '\\"').replace('\n', '\\n')  # Escape quotes and newlines for JSON string
                 is_first = False
             else:
                 # Check the status of the task
                 task_status = ContentOutlineTask.query.get(content_outline_task_id).content_outline_task_status
                 if task_status == 'Completed':
-                    yield '"}'
+                    yield '"}}'
                     break
 
     return Response(stream_with_context(generate_response()), content_type='application/json')
