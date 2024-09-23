@@ -732,7 +732,7 @@ def get_content_outline(content_outline_task_id):
         is_first = True
         
         # Start appending to the content field inside content_outline
-        yield ', "content_outline": {'
+        yield ', "content_outline_stream": {'
         yield f'"id": "{response_dict["id"]}", "title": "{response_dict["title"]}", "target_audience": "{response_dict["target_audience"]}", "wrote_as": "{response_dict["wrote_as"]}", "additional_info": "{response_dict["additional_info"]}", "content": "'
 
         while True:

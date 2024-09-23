@@ -32,9 +32,11 @@ class ContentOutlineTaskSchema(ma.SQLAlchemyAutoSchema):
         model = ContentOutlineTask
         include_fk = True
         load_instance = True
+        fields = ['id', 'content_outline_task_status', 'content_outline_id', 'added']
 
 class ContentOutlineSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = ContentOutline
         include_fk = True
         load_instance = True
+

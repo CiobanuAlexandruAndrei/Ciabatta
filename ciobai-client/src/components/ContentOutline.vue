@@ -1,67 +1,82 @@
 <template>
     <div class="w-full">
-
         <div class="w-full">
             <div v-if="contentOutline.content_outline">
-                {{ contentOutline.content_outline.content.title }}
-                <br>
-                <br>
-                {{ contentOutline.content_outline.content.target_audience }}
-                <br>
-                <br>
-                {{ contentOutline.content_outline.content.wrote_as }}
-                <br>
-                <br>
-                {{ contentOutline.content_outline.content.content }}
-                <br>
-                <br>
-                <hr>
-                <br>
-                URL: {{ contentOutline.content_outline.content.metatags.url }}
-                <br>
-                <br>
-                Page Title: {{ contentOutline.content_outline.content.metatags.page_title }}
-                <br>
-                <br>
-                Page Description: {{ contentOutline.content_outline.content.metatags.page_description }}
+                <h1>{{ contentOutline.content_outline.title }}</h1>
+                <p>
+                    <strong>Target Audience:</strong>
+                    {{ contentOutline.content_outline.target_audience }}
+                </p>
+                <p>
+                    <strong>Wrote As:</strong>
+                    {{ contentOutline.content_outline.wrote_as }}
+                </p>
+                <p>
+                    <strong>Content:</strong> {{ contentOutline.content_outline.content }}
+                </p>
+
+                <hr />
+
+                <div v-if="contentOutline.content_outline.metatags">
+                    <p>
+                        <strong>URL:</strong>
+                        {{ contentOutline.content_outline.metatags.url }}
+                    </p>
+                    <p>
+                        <strong>Page Title:</strong>
+                        {{ contentOutline.content_outline.metatags.page_title }}
+                    </p>
+                    <p>
+                        <strong>Page Description:</strong>
+                        {{ contentOutline.content_outline.metatags.page_description }}
+                    </p>
+                </div>
+
+                <pre>{{ contentOutline.content_outline.content }}</pre>
             </div>
+
+            <div v-else>
+                <p>No content outline available.</p>
+            </div>
+
+            <pre>{{ content }}</pre>
         </div>
     </div>
 </template>
-
 <script setup>
-import { ref, onMounted, defineProps } from 'vue';
-import { useRouter } from 'vue-router';
-import jsonAutocomplete from 'json-autocomplete';
+import { ref, onMounted, defineProps } from "vue";
+import { useRouter } from "vue-router";
+import jsonAutocomplete from "json-autocomplete";
 
+const props = defineProps(["contentOutlineId"]);
 const router = useRouter();
-const props = defineProps(['contentOutlineId']);
 
-const contentOutlineId = ref('');
+const contentOutlineId = ref("");
 const contentOutline = ref({});
+const content = ref("");
 
 async function fetchContentOutline() {
-    const token = localStorage.getItem('token');
-
-    console.log('Starting to fetch content outline...');
-    console.log('Content Outline ID:', contentOutlineId.value);
+    const token = localStorage.getItem("token");
 
     try {
-        const response = await fetch(`http://127.0.0.1:5000/api/get_content_outline/${contentOutlineId.value}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
+        const response = await fetch(
+            `http://127.0.0.1:5000/api/get_content_outline/${contentOutlineId.value}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
 
-        if (!response.body) {
-            throw new Error('ReadableStream not yet supported in this browser.');
+        if (!response.ok) {
+            throw new Error("Network response was not ok");
         }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let buffer = '';
+        let buffer = "";
 
         while (true) {
             const { value, done } = await reader.read();
@@ -69,31 +84,21 @@ async function fetchContentOutline() {
             buffer += decoder.decode(value, { stream: true });
 
             try {
-             
-                // const updatedOutline = JSON.parse(buffer);
-                // contentOutline.value = updatedOutline;
-                // console.log('Updated content outline:', updatedOutline);
-
-                console.log(buffer)
                 let updatedOutline = jsonAutocomplete(buffer);
-                
-                updatedOutline = updatedOutline.replace(/json/g, '');
-                updatedOutline = updatedOutline.replace('```', '');
-                updatedOutline = updatedOutline.replaceAll('\n', '')
-
-                updatedOutline = JSON.parse(updatedOutline);
-
-                contentOutline.value = updatedOutline;
-                console.log(contentOutline.value)
+                updatedOutline = updatedOutline
+                    .replace(/json/g, "")
+                    .replace(/```/g, "")
+                    .replaceAll("\n", "");
+                contentOutline.value = JSON.parse(updatedOutline);
+                content.value =
+                    contentOutline.value.content_outline_stream?.content ||
+                    contentOutline.value.content_outline.content;
             } catch (error) {
-                console.log(error)
-                console.log('Incomplete JSON, buffering...');
+                console.log("Incomplete JSON, buffering...");
             }
         }
     } catch (error) {
-        console.error('Error fetching content outline:', error);
-    } finally {
-        console.log('Finished fetching content outline.');
+        console.error("Error fetching content outline:", error);
     }
 }
 
