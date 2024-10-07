@@ -701,37 +701,30 @@ content_outline_schema = ContentOutlineSchema()
 @seo.route('/get_content_outline/<string:content_outline_task_id>', methods=['GET'])
 @auth.login_required
 def get_content_outline(content_outline_task_id):
-    # Retrieve ContentOutlineTask based on the task ID
     content_outline_task = ContentOutlineTask.query.get(content_outline_task_id)
     
     if not content_outline_task:
         return jsonify({'message': 'Content outline task not found'}), 404
 
-    # Retrieve the associated ContentOutline
     content_outline = ContentOutline.query.get(content_outline_task.content_outline_id)
     
     if not content_outline:
         return jsonify({'message': 'Content outline not found'}), 404
 
     def generate_response():
-        # Serialize the initial content outline
         initial_json = content_outline_schema.dump(content_outline)
-        
-        # Initialize content field with pre-existing content
+
         initial_content = initial_json.get('content', '')
 
-        # Create the response dictionary
         response_dict = initial_json.copy()
         response_dict['content'] = initial_content
 
-        # Start the JSON object
         yield '{'
         yield f'"content_outline": {json.dumps(response_dict, indent=4)}'
         
         redis_key = content_outline_task_id
         is_first = True
         
-        # Start appending to the content field inside content_outline
         yield ', "content_outline_stream": {'
         yield f'"id": "{response_dict["id"]}", "title": "{response_dict["title"]}", "target_audience": "{response_dict["target_audience"]}", "wrote_as": "{response_dict["wrote_as"]}", "additional_info": "{response_dict["additional_info"]}", "content": "'
 
@@ -739,11 +732,10 @@ def get_content_outline(content_outline_task_id):
             data = redis_client.lpop(redis_key)
             if data:
                 if not is_first:
-                    yield '\\n'  # Add a newline between chunks
-                yield data.replace('"', '\\"').replace('\n', '\\n')  # Escape quotes and newlines for JSON string
+                    yield '\\n'  
+                yield data.replace('"', '\\"').replace('\n', '\\n') 
                 is_first = False
             else:
-                # Check the status of the task
                 task_status = ContentOutlineTask.query.get(content_outline_task_id).content_outline_task_status
                 if task_status == 'Completed':
                     yield '"}}'

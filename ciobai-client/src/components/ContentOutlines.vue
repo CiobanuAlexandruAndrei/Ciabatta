@@ -2,7 +2,9 @@
     <div class="mt-8">
         <div>
             <div v-for="task in contentOutlinesTasks" :key="task.id">
-                <router-link :to="'/content-outline/' + task.id">{{ task.id }} - {{ task }}</router-link>
+                <router-link :to="'/content-outline/' + task.id">
+                    {{ task.id }} - {{ task.content_outline_task_status }} - {{ timeSince(task.added) }} - {{ task.added }}
+                </router-link>
                 <hr/>
             </div>
         </div>
@@ -108,6 +110,21 @@ const fetchContentOutlinesTasks = async () => {
     } catch (error) {
         console.error("Error fetching content outlines tasks:", error);
     }
+};
+
+const timeSince = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    let interval = Math.floor(seconds / 31536000);
+    if (interval > 1) return `${interval} years ago`;
+    interval = Math.floor(seconds / 2592000);
+    if (interval > 1) return `${interval} months ago`;
+    interval = Math.floor(seconds / 86400);
+    if (interval > 1) return `${interval} days ago`;
+    interval = Math.floor(seconds / 3600);
+    if (interval > 1) return `${interval} hours ago`;
+    interval = Math.floor(seconds / 60);
+    if (interval > 1) return `${interval} minutes ago`;
+    return "just now";
 };
 
 

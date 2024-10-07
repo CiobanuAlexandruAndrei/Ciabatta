@@ -39,7 +39,7 @@ def generate_content_outline_task(self, prompt, example_json, profile_id, conten
                 stream = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
-                        {"role": "system", "content": "Provide output in valid JSON. The data schema should be like this: " + json.dumps(example_json)},
+                        {"role": "system", "content": "Provide output in valid JSON. For text line breaks insert '<br>', be sure to add line breaks correctly for readability. The data schema should be like this: " + json.dumps(example_json)},
                         {"role": "user", "content": prompt}
                     ],
                     response_format={"type":"json_object"},

@@ -8,7 +8,7 @@ class ContentIdea(db.Model):
     topic_variation = db.Column(db.String(200), nullable=False)
     topic_category = db.Column(db.String(200), nullable=False)
 
-    added = db.Column(db.DateTime, default=datetime.utcnow)
+    added = db.Column(db.DateTime, default=datetime.now)
 
     profile_id = db.Column(db.Integer, db.ForeignKey('profile.id'), nullable=False)
     profile = db.relationship('Profile', backref=db.backref('content_ideas', lazy=True))
@@ -29,7 +29,7 @@ class ContentOutlineTask(db.Model):
     id = db.Column(db.String(36), primary_key=True, unique=True, nullable=False, default=uuid.uuid4().hex)
     content_outline_task_status = db.Column(db.String(200), nullable=False)
 
-    added = db.Column(db.DateTime, default=datetime.utcnow)
+    added = db.Column(db.DateTime, default=datetime.now)
 
     content_outline_id = db.Column(db.String(36), db.ForeignKey('content_outline.id'), nullable=False)
     content_outline = db.relationship('ContentOutline', backref=db.backref('content_outline_tasks', lazy=True))
@@ -45,8 +45,8 @@ class KeywordData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     country = db.Column(db.String(200), nullable=False)
-    added = db.Column(db.DateTime, default=datetime.utcnow)
-    updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    added = db.Column(db.DateTime, default=datetime.now)
+    updated = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     json = db.Column(db.JSON, nullable=False)
     filters = db.Column(db.JSON, nullable=True)
 
@@ -67,7 +67,7 @@ class APIUsed(db.Model):
 class APICostRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cost = db.Column(db.Float, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
     api_used_name = db.Column(db.String(200), db.ForeignKey('api_used.name'), nullable=False)
     api_used = db.relationship('APIUsed', backref=db.backref('cost_records', lazy=True))
 
