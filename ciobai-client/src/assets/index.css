@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add this to your global CSS or scoped CSS in your components */
+.resizable-panel-group {
+  display: flex;
+  height: 100%;
+}
+
+.resizable-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.resizable-handle {
+  cursor: ew-resize;
+  background-color: #e0e0e0;
+  width: 10px;
+  flex-shrink: 0;
+}
+
+.resizable-handle:hover {
+  background-color: #bdbdbd;
+}
+
+.main-content {
+  transition: margin-left 0.3s;
+}
+
+.collapsed-sidebar {
+  margin-left: 5rem; /* Adjust this value to match the collapsed sidebar width */
+}
+
+.expanded-sidebar {
+  margin-left: 16rem; /* Adjust this value to match the expanded sidebar width */
+}
