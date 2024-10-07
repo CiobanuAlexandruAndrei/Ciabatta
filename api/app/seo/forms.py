@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, BooleanField
+from wtforms import StringField, IntegerField, BooleanField, TextAreaField, SubmitField
 from wtforms.validators import DataRequired, Optional
 
 
@@ -56,3 +56,13 @@ class GenerateContentOutlineForm(FlaskForm):
     additional_info = StringField('additional_info', validators=[Optional()])
     content_idea_id = IntegerField('content_idea_id', validators=[DataRequired()])
     delete_content_idea = BooleanField('delete_content_idea', validators=[Optional()])
+
+
+
+class EditContentOutlineForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired()])
+    url = StringField('URL', validators=[DataRequired()])
+    page_title = StringField('Page Title', validators=[DataRequired()])
+    page_description = StringField('Page Description', validators=[DataRequired()])
+    content = TextAreaField('Content', validators=[DataRequired()])  # Assuming content is a string
+    submit = SubmitField('Update Content Outline')

@@ -690,10 +690,20 @@ def create_content_outline_task():
 @auth.login_required
 def get_all_content_outlines_tasks():
     user_profile = Profile.query.filter_by(user_id=get_current_user().id).first()
-    content_outlines_tasks = ContentOutlineTask.query.filter_by(profile_id=user_profile.id).all()
+   
+    content_outlines_tasks = (
+        ContentOutlineTask.query
+        .filter_by(profile_id=user_profile.id)
+        .order_by(ContentOutlineTask.added.desc())  
+        .all()
+    )
+    
     schema = ContentOutlineTaskSchema(many=True)
     content_outlines_tasks_data = schema.dump(content_outlines_tasks)
+    
     return jsonify({'message': 'Content outlines tasks retrieved successfully', 'result': content_outlines_tasks_data}), 200
+
+
 
 
 content_outline_schema = ContentOutlineSchema()
@@ -742,3 +752,48 @@ def get_content_outline(content_outline_task_id):
                     break
 
     return Response(stream_with_context(generate_response()), content_type='application/json')
+
+
+
+
+@seo.route('/edit_content_outline/<string:content_outline_id>', methods=['GET', 'PUT'])
+@auth.login_required
+def edit_content_outline(content_outline_id):
+    content_outline = ContentOutline.query.get(content_outline_id)
+    
+    if not content_outline:
+        return jsonify({'message': 'Content outline not found'}), 404
+
+    if request.method == 'GET':
+        # Return the current content outline data
+        content_data = json.loads(content_outline.content)
+        response_data = {
+            'title': content_outline.title,
+            'url': content_data['metatags'].get('url', ''),
+            'page_title': content_data['metatags'].get('page_title', ''),
+            'page_description': content_data['metatags'].get('page_description', ''),
+            'content': content_data.get('content', ''),
+        }
+        return jsonify({'message': 'Content outline retrieved successfully', 'result': response_data}), 200
+
+    if request.method == 'PUT':
+        # Update the existing content outline with the new values
+        data = request.get_json()
+
+        # Validate required fields
+        if not all(key in data for key in ('title', 'url', 'page_title', 'page_description', 'content')):
+            return jsonify({'message': 'Missing required fields'}), 400
+        
+        content_data = json.loads(content_outline.content)
+        
+        content_data['metatags']['url'] = data['url']
+        content_data['metatags']['page_title'] = data['page_title']
+        content_data['metatags']['page_description'] = data['page_description']
+        content_data['content'] = data['content']
+
+        # Update the main outline fields
+        content_outline.title = data['title']
+        content_outline.content = json.dumps(content_data)  # Store the updated content as JSON
+
+        db.session.commit()
+        return jsonify({'message': 'Content outline updated successfully'}), 200

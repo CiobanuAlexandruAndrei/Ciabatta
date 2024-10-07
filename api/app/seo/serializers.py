@@ -1,3 +1,4 @@
+import json
 from flask_marshmallow import Marshmallow
 from .models import Keyword, KeywordCluster, APICostRecord, ContentIdea, ContentOutlineTask, ContentOutline
 
@@ -27,12 +28,7 @@ class ContentIdeaSchema(ma.SQLAlchemyAutoSchema):
         model = ContentIdea
         load_instance = True
 
-class ContentOutlineTaskSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = ContentOutlineTask
-        include_fk = True
-        load_instance = True
-        fields = ['id', 'content_outline_task_status', 'content_outline_id', 'added']
+
 
 class ContentOutlineSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
@@ -40,3 +36,22 @@ class ContentOutlineSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True
         load_instance = True
 
+    # Extract "title" from the content JSON
+    title = ma.Method("get_title_from_content")
+
+    def get_title_from_content(self, obj):
+        if obj.content:
+            # Assuming content is a string that needs to be parsed as JSON
+            content_data = json.loads(obj.content)
+            return content_data.get('title')
+        return None
+
+class ContentOutlineTaskSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = ContentOutlineTask
+        include_fk = True
+        load_instance = True
+        fields = ['id', 'content_outline_task_status', 'content_outline_id', 'added', 'content_outline']
+
+    # Include the title from the related ContentOutline
+    content_outline = ma.Nested(ContentOutlineSchema, only=['title'])

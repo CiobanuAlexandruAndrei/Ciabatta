@@ -1,101 +1,41 @@
 <template>
-    <div class="mt-8">
-        <div>
-            <div v-for="task in contentOutlinesTasks" :key="task.id">
-                <router-link :to="'/content-outline/' + task.id">
-                    {{ task.id }} - {{ task.content_outline_task_status }} - {{ timeSince(task.added) }} - {{ task.added }}
-                </router-link>
-                <hr/>
-            </div>
+    <div class="mt-8 p-4">
+        <div class="bg-white">
+            <router-link :to="'/content-outline/' + task.id" v-for="task in contentOutlinesTasks" :key="task.id" class="flex justify-between items-center border-b last:border-b-0 py-3">
+                <div 
+                    
+                    class="text-slate-700 text-sm hover:underline w-1/3 text-left"
+                >
+                    <span class="font-semibold">{{ task.content_outline.title }}</span>
+                </div>
+
+                <div class="flex justify-center w-1/3">
+                    <span 
+                        :class="{
+                            'bg-green-200 text-green-800': task.content_outline_task_status === 'Completed',
+                            'bg-red-200 text-red-800': task.content_outline_task_status === 'Failed',
+                            'bg-yellow-200 text-yellow-800': task.content_outline_task_status === 'Processing'
+                        }"
+                        class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full"
+                    >
+                        {{ task.content_outline_task_status }}
+                    </span>
+                </div>
+
+                <span class="text-gray-500 w-1/3 text-right">{{ timeSince(task.added) }}</span>
+            </router-link>
         </div>
-        <!-- <Table class="my-3 w-full">
-            <TableHeader>
-                <TableRow>
-                    <TableCell>
-                        <Checkbox id="selectAll" :checked="allSelected" @click="toggleSelectAll" />
-                    </TableCell>
-                    <TableCell>Title</TableCell>
-                    <TableCell>Topic Variation</TableCell>
-                    <TableCell>Main Topic</TableCell>
-                    <TableCell>Actions</TableCell>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                <TableRow v-for="idea in filteredContentIdeas" :key="idea.id">
-                    <TableCell class="text-sm max-w-[400px]">
-                        <Checkbox :id="`idea-${idea.id}`" :checked="selectedIdeas.includes(idea.id)"
-                            @click="() => toggleSelection(idea.id)" />
-                    </TableCell>
-                    <TableCell class="text-sm max-w-[700px]">{{ idea.title }}</TableCell>
-                    <TableCell class="text-sm">{{ idea.topic_variation }}</TableCell>
-                    <TableCell class="text-sm">{{ idea.topic_category }}</TableCell>
-                    <TableCell class="text-sm flex gap-2 min-w-[150px]">
-                        <GenerateOutlinesBtn :importedPostTitle="idea.title" :contentIdeaId="idea.id" />
-                        <AlertDialog>
-                            <AlertDialogTrigger as-child>
-                                <Button variant="destructive" @click="() => confirmDeleteIdea(idea.id)">
-                                    <img class="h-[15px]" src="@/assets/img/trash_icon.png" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the content idea.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction @click="deleteIdea">Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                        
-                    </TableCell>
-                </TableRow>
-            </TableBody>
-        </Table>
-        <div v-if="filteredContentIdeas.length == 0" class="py-4 text-center w-full text-sm">
-            No results found
-        </div> -->
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from 'vue-router';
-
 import axios from "axios";
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-
-
-
 
 const router = useRouter();
-
-
 const contentOutlinesTasks = ref([]);
+
 
 const fetchContentOutlinesTasks = async () => {
     try {
@@ -112,6 +52,7 @@ const fetchContentOutlinesTasks = async () => {
     }
 };
 
+
 const timeSince = (date) => {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
     let interval = Math.floor(seconds / 31536000);
@@ -127,8 +68,11 @@ const timeSince = (date) => {
     return "just now";
 };
 
-
 onMounted(async () => {
     fetchContentOutlinesTasks();
 });
 </script>
+
+<style scoped>
+
+</style>
